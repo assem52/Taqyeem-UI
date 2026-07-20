@@ -1,16 +1,12 @@
-
-import { Provider } from "react-redux";
-import { store } from "./store";
-import { RouterProvider } from "react-router-dom";
-import { router } from "./router";
+import { Provider } from 'react-redux'
+import { RouterProvider } from 'react-router-dom'
+import { store } from './store'
+import { router } from './router'
 
 export default function App() {
-  const dev = false;
-  return dev ? (
-    <h1>HOME</h1>
-  ) : (
+  return (
     <Provider store={store}>
       <RouterProvider router={router} />
     </Provider>
-  );
+  )
 }
