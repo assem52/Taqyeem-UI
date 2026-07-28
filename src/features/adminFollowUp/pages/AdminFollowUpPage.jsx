@@ -1,4 +1,7 @@
 import { useGetAdminFollowUpQuery } from '../adminFollowUpApi'
+import { formatDateTime } from '../../../shared/utils/formatDate'
+import FollowUpGroups from '../components/FollowUpGroups'
+import FollowUpSummary from '../components/FollowUpSummary'
 
 export default function AdminFollowUpPage() {
   const { data, isLoading, isError, refetch } = useGetAdminFollowUpQuery()
@@ -12,6 +15,11 @@ export default function AdminFollowUpPage() {
         <p className="text-sm text-slate-500">
           Learners who need an actionable follow-up across published quizzes.
         </p>
+        {data ? (
+          <p className="mt-2 text-xs text-slate-400">
+            Generated {formatDateTime(data.generatedAt)}
+          </p>
+        ) : null}
       </header>
 
       {isLoading ? (
@@ -36,29 +44,11 @@ export default function AdminFollowUpPage() {
         </div>
       ) : null}
 
-      {data?.summary.total === 0 ? (
-        <p className="rounded border border-slate-200 bg-white p-4 text-sm text-slate-600">
-          No learners need follow-up.
-        </p>
-      ) : null}
-
-      {data && data.summary.total > 0 ? (
-        <section aria-label="Follow-up overview">
-          <p className="mb-4 text-sm font-medium text-slate-700">
-            {data.summary.total} learner follow-up
-            {data.summary.total === 1 ? '' : 's'}
-          </p>
-          <ul className="flex list-none flex-col gap-2 p-0">
-            {data.groups.map((group) => (
-              <li
-                className="rounded border border-slate-200 bg-white p-3 text-sm text-slate-700"
-                key={group.reason}
-              >
-                {group.label}: {group.count}
-              </li>
-            ))}
-          </ul>
-        </section>
+      {data ? (
+        <>
+          <FollowUpSummary summary={data.summary} />
+          <FollowUpGroups groups={data.groups} />
+        </>
       ) : null}
     </main>
   )
