@@ -1,10 +1,21 @@
+import { useState } from 'react'
 import { useGetAdminFollowUpQuery } from '../adminFollowUpApi'
 import { formatDateTime } from '../../../shared/utils/formatDate'
 import FollowUpGroups from '../components/FollowUpGroups'
 import FollowUpSummary from '../components/FollowUpSummary'
+import QuizFilter from '../components/QuizFilter'
+import { deriveQuizOptions } from '../utils/deriveQuizOptions'
 
 export default function AdminFollowUpPage() {
-  const { data, isLoading, isError, refetch } = useGetAdminFollowUpQuery()
+  const [selectedQuizId, setSelectedQuizId] = useState('')
+  const allFollowUps = useGetAdminFollowUpQuery()
+  const filteredFollowUps = useGetAdminFollowUpQuery(
+    { quizId: selectedQuizId },
+    { skip: selectedQuizId === '' },
+  )
+  const activeQuery = selectedQuizId ? filteredFollowUps : allFollowUps
+  const { data, isLoading, isFetching, isError, refetch } = activeQuery
+  const quizOptions = deriveQuizOptions(allFollowUps.data?.groups ?? [])
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8">
@@ -22,8 +33,21 @@ export default function AdminFollowUpPage() {
         ) : null}
       </header>
 
+      <QuizFilter
+        disabled={allFollowUps.isLoading || allFollowUps.isError}
+        onChange={setSelectedQuizId}
+        options={quizOptions}
+        selectedQuizId={selectedQuizId}
+      />
+
       {isLoading ? (
         <p className="text-sm text-slate-500">Loading follow-up list…</p>
+      ) : null}
+
+      {isFetching && !isLoading ? (
+        <p className="mb-3 text-xs text-slate-400" role="status">
+          Refreshing follow-up list…
+        </p>
       ) : null}
 
       {isError ? (
@@ -44,7 +68,7 @@ export default function AdminFollowUpPage() {
         </div>
       ) : null}
 
-      {data ? (
+      {!isError && data ? (
         <>
           <FollowUpSummary summary={data.summary} />
           <FollowUpGroups groups={data.groups} />
