@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useBulkInviteStudentsMutation } from '../adminQuizzesApi';
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB file size guard to prevent tab freezing
+
 export default function BulkInviteModal({ isOpen, onClose, quiz }) {
   const [rawText, setRawText] = useState('');
   const [summaryResult, setSummaryResult] = useState(null);
@@ -22,6 +24,16 @@ export default function BulkInviteModal({ isOpen, onClose, quiz }) {
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      setErrorMsg(
+        `File size exceeds 5MB limit (${(file.size / (1024 * 1024)).toFixed(
+          2,
+        )} MB). Please select a smaller file.`,
+      );
+      e.target.value = '';
+      return;
+    }
 
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -88,8 +100,14 @@ export default function BulkInviteModal({ isOpen, onClose, quiz }) {
 
         <div className="p-6 max-h-[80vh] overflow-y-auto space-y-5">
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm font-medium">
-              {errorMsg}
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm font-medium flex justify-between items-center">
+              <div>{errorMsg}</div>
+              <button
+                onClick={() => setErrorMsg('')}
+                className="text-rose-400 hover:text-rose-200 font-bold px-2"
+              >
+                ✕
+              </button>
             </div>
           )}
 
@@ -115,7 +133,7 @@ export default function BulkInviteModal({ isOpen, onClose, quiz }) {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Or Upload CSV / Text File
+                  Or Upload CSV / Text File (Max 5MB)
                 </label>
                 <input
                   type="file"
