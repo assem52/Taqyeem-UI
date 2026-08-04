@@ -10,9 +10,11 @@ export const baseApi = createApi({
             if (studentId) {
                 headers.set('x-student-id', studentId);
             }
-            const adminToken = import.meta.env.VITE_ADMIN_TOKEN;
-            if (import.meta.env.DEV && adminToken) {
-                headers.set('x-admin-token', adminToken);
+            if (import.meta.env.DEV) {
+                const adminToken = import.meta.env.VITE_ADMIN_TOKEN;
+                if (adminToken) {
+                    headers.set('x-admin-token', adminToken);
+                }
             }
             const jwtToken = localStorage.getItem('token');
             if (jwtToken) {
