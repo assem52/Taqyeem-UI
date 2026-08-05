@@ -14,6 +14,7 @@ export const adminFollowUpApi = baseApi.injectEndpoints({
         url: '/admin/follow-up',
         params: query?.quizId ? { quizId: query.quizId } : undefined,
       }),
+      providesTags: ['AdminFollowUp'],
     }),
   }),
 })

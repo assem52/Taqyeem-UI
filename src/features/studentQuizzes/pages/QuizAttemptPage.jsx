@@ -146,11 +146,19 @@ export default function QuizAttemptPage() {
         if (attempt && !isRestored) {
             const restoredAnswers = {};
             if (attempt.attemptAnswers) {
-                for (const [qId, data] of Object.entries(attempt.attemptAnswers)) {
-                    if (data && data.selectedOptionId) {
-                        restoredAnswers[qId] = data.selectedOptionId;
-                    } else if (typeof data === 'string') {
-                        restoredAnswers[qId] = data;
+                if (Array.isArray(attempt.attemptAnswers)) {
+                    for (const item of attempt.attemptAnswers) {
+                        if (item && item.questionId) {
+                            restoredAnswers[item.questionId] = item.selectedOptionId ?? item.selectedOption ?? item.answer ?? '';
+                        }
+                    }
+                } else if (typeof attempt.attemptAnswers === 'object') {
+                    for (const [qId, data] of Object.entries(attempt.attemptAnswers)) {
+                        if (data && typeof data === 'object') {
+                            restoredAnswers[qId] = data.selectedOptionId ?? data.optionId ?? data.answer ?? '';
+                        } else if (typeof data === 'string') {
+                            restoredAnswers[qId] = data;
+                        }
                     }
                 }
             }
@@ -275,10 +283,13 @@ export default function QuizAttemptPage() {
     };
 
     const handleSubmit = async () => {
+        if (isSubmitting || isFlushing) return;
+        const attemptId = attempt?.id;
+        if (!attemptId) return;
         try {
             setIsFlushing(true);
             await flushPendingSaves();
-            await submitAttempt(attempt.id).unwrap();
+            await submitAttempt(attemptId).unwrap();
             setIsSubmittedSuccessfully(true);
         } catch {
             // isSubmitError will handle rendering the error in the UI
@@ -289,8 +300,42 @@ export default function QuizAttemptPage() {
         }
     };
 
-    const answeredCount = Object.keys(answers).length;
+    const answeredCount = Object.values(answers).filter(val => val != null && val !== '').length;
     const progressPercentage = Math.round((answeredCount / totalQuestions) * 100);
+
+    const renderQuestionOptions = (question) => {
+        const rawOpts = question.options;
+        const opts = (rawOpts && rawOpts.length > 0)
+            ? rawOpts
+            : (question.type === 'TRUE_FALSE'
+                ? [{ id: 'true', option: 'True' }, { id: 'false', option: 'False' }]
+                : []);
+        return opts.map((opt, idx) => {
+            const optValue = typeof opt === 'string' ? opt : (opt.id || opt.option || opt.value || `opt-${idx}`);
+            const optLabel = typeof opt === 'string' ? opt : (opt.option || opt.text || opt.label || opt.id);
+            const isSelected = answers[question.id] === optValue;
+
+            return (
+                <label 
+                    key={optValue} 
+                    className={`flex cursor-pointer items-center gap-4 rounded-button border p-4 transition-all duration-200 ${
+                        isSelected 
+                            ? "border-primary bg-primary/5 text-heading font-medium ring-1 ring-primary/30" 
+                            : "border-border bg-surface text-body hover:bg-background"
+                    }`}
+                >
+                    <input 
+                        type="radio" 
+                        name={`question-${question.id}`} 
+                        className="h-4 w-4 border-border text-primary focus:ring-primary accent-primary"
+                        checked={isSelected}
+                        onChange={() => handleOptionSelect(question.id, optValue)}
+                    />
+                    <span className="text-sm">{optLabel}</span>
+                </label>
+            );
+        });
+    };
 
     return (
         <div className="flex flex-col min-h-screen bg-background font-sans">
@@ -435,30 +480,7 @@ export default function QuizAttemptPage() {
 
                                 <div className="space-y-3">
                                     {currentQuestion.type === 'MCQ' || currentQuestion.type === 'TRUE_FALSE' ? (
-                                        currentQuestion.options?.map((opt) => {
-                                            const optValue = opt.id || opt.option;
-                                            const isSelected = answers[currentQuestion.id] === optValue;
-
-                                            return (
-                                                <label 
-                                                    key={optValue} 
-                                                    className={`flex cursor-pointer items-center gap-4 rounded-button border p-4 transition-all duration-200 ${
-                                                        isSelected 
-                                                            ? "border-primary bg-primary/5 text-heading font-medium ring-1 ring-primary/30" 
-                                                            : "border-border bg-surface text-body hover:bg-background"
-                                                    }`}
-                                                >
-                                                    <input 
-                                                        type="radio" 
-                                                        name={`question-${currentQuestion.id}`} 
-                                                        className="h-4 w-4 border-border text-primary focus:ring-primary accent-primary"
-                                                        checked={isSelected}
-                                                        onChange={() => handleOptionSelect(currentQuestion.id, optValue)}
-                                                    />
-                                                    <span className="text-sm">{opt.option}</span>
-                                                </label>
-                                            );
-                                        })
+                                        renderQuestionOptions(currentQuestion)
                                     ) : currentQuestion.type === 'OPEN_ENDED' ? (
                                         <textarea
                                             className="w-full rounded-input border border-border bg-background p-4 text-sm text-heading shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors"

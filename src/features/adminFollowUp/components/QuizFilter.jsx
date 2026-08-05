@@ -20,7 +20,7 @@ export default function QuizFilter({
         value={selectedQuizId}
       >
         <option value="">All quizzes</option>
-        {options.map((option) => (
+        {(options ?? []).map((option) => (
           <option key={option.quizId} value={option.quizId}>
             {option.quizTitle}
           </option>

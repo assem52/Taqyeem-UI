@@ -16,6 +16,7 @@ export default function QuizGatewayPage() {
   const [startAttempt, { isLoading: isStarting, isError: isStartError }] = useStartAttemptMutation();
 
   const handleStart = async () => {
+    if (isStarting) return;
     try {
       await startAttempt(quizId).unwrap();
       navigate(`/quizzes/${quizId}/attempt`);
