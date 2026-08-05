@@ -14,8 +14,9 @@ export const studentQuizzesApi = baseApi.injectEndpoints({
         }),
         startAttempt: build.mutation({
             query: (quizId) => ({
-                url: `/student/quizzes/${quizId}/attempts`,
+                url: '/attempts',
                 method: 'POST',
+                body: { quizId },
             }),
         }),
         getAttempt: build.query({

@@ -25,7 +25,123 @@ export default function QuizAttemptPage() {
     const [saveStatus, setSaveStatus] = useState('');
     const [isRestored, setIsRestored] = useState(false);
     const [isSubmittedSuccessfully, setIsSubmittedSuccessfully] = useState(false);
+    const [isFlushing, setIsFlushing] = useState(false);
+
     const debounceTimers = useRef({});
+    const pendingAnswers = useRef({});
+    const inFlightSaves = useRef({});
+    const isMounted = useRef(true);
+    const attemptIdRef = useRef(attempt?.id);
+
+    useEffect(() => {
+        attemptIdRef.current = attempt?.id;
+    }, [attempt?.id]);
+
+    const safeSetSaveStatus = useCallback((updater) => {
+        if (isMounted.current) {
+            setSaveStatus(updater);
+        }
+    }, []);
+
+    const performSave = useCallback(async (questionId, value) => {
+        const attemptId = attemptIdRef.current;
+        if (!attemptId) return;
+
+        const existingInFlight = inFlightSaves.current[questionId];
+        if (existingInFlight) {
+            try {
+                await existingInFlight;
+            } catch (_) {
+                // Ignore error from previous save attempt and proceed with latest value
+            }
+        }
+
+        const savePromise = (async () => {
+            safeSetSaveStatus('Saving...');
+            try {
+                await saveAnswerMutation({ 
+                    attemptId, 
+                    questionId, 
+                    selectedOptionId: value 
+                }).unwrap();
+                safeSetSaveStatus('Saved');
+                setTimeout(() => safeSetSaveStatus((prev) => (prev === 'Saved' ? '' : prev)), 2000);
+            } catch (err) {
+                safeSetSaveStatus('Retrying...');
+                try {
+                    await saveAnswerMutation({ 
+                        attemptId, 
+                        questionId, 
+                        selectedOptionId: value 
+                    }).unwrap();
+                    safeSetSaveStatus('Saved');
+                    setTimeout(() => safeSetSaveStatus((prev) => (prev === 'Saved' ? '' : prev)), 2000);
+                } catch (retryErr) {
+                    safeSetSaveStatus('Error saving');
+                }
+            }
+        })();
+
+        inFlightSaves.current[questionId] = savePromise;
+        try {
+            await savePromise;
+        } finally {
+            delete inFlightSaves.current[questionId];
+        }
+    }, [saveAnswerMutation, safeSetSaveStatus]);
+
+    const triggerSave = useCallback((questionId, value) => {
+        pendingAnswers.current[questionId] = value;
+
+        if (debounceTimers.current[questionId]) {
+            clearTimeout(debounceTimers.current[questionId]);
+            delete debounceTimers.current[questionId];
+        }
+
+        safeSetSaveStatus('Saving...');
+
+        debounceTimers.current[questionId] = setTimeout(async () => {
+            delete debounceTimers.current[questionId];
+            const val = pendingAnswers.current[questionId];
+            delete pendingAnswers.current[questionId];
+            if (val !== undefined) {
+                await performSave(questionId, val);
+            }
+        }, 500);
+    }, [performSave, safeSetSaveStatus]);
+
+    const flushPendingSaves = useCallback(async () => {
+        const promises = [];
+
+        const pendingTimerQuestionIds = Object.keys(debounceTimers.current);
+        for (const qId of pendingTimerQuestionIds) {
+            clearTimeout(debounceTimers.current[qId]);
+            delete debounceTimers.current[qId];
+
+            const value = pendingAnswers.current[qId];
+            delete pendingAnswers.current[qId];
+
+            if (value !== undefined) {
+                promises.push(performSave(qId, value));
+            }
+        }
+
+        const remainingPendingIds = Object.keys(pendingAnswers.current);
+        for (const qId of remainingPendingIds) {
+            const value = pendingAnswers.current[qId];
+            delete pendingAnswers.current[qId];
+
+            if (value !== undefined) {
+                promises.push(performSave(qId, value));
+            }
+        }
+
+        const inFlightPromises = Object.values(inFlightSaves.current);
+
+        if (promises.length > 0 || inFlightPromises.length > 0) {
+            await Promise.all([...promises, ...inFlightPromises]);
+        }
+    }, [performSave]);
 
     useEffect(() => {
         if (attempt && !isRestored) {
@@ -55,10 +171,29 @@ export default function QuizAttemptPage() {
     }, [attempt, isRestored]);
 
     useEffect(() => {
+        isMounted.current = true;
         return () => {
-            Object.values(debounceTimers.current).forEach(clearTimeout);
+            isMounted.current = false;
+            
+            const pendingTimerQuestionIds = Object.keys(debounceTimers.current);
+            for (const qId of pendingTimerQuestionIds) {
+                clearTimeout(debounceTimers.current[qId]);
+                delete debounceTimers.current[qId];
+
+                const value = pendingAnswers.current[qId];
+                delete pendingAnswers.current[qId];
+
+                const attemptId = attemptIdRef.current;
+                if (value !== undefined && attemptId) {
+                    saveAnswerMutation({
+                        attemptId,
+                        questionId: qId,
+                        selectedOptionId: value,
+                    });
+                }
+            }
         };
-    }, []);
+    }, [saveAnswerMutation]);
 
     if (isLoading || (attempt && !isRestored)) {
         return (
@@ -120,38 +255,6 @@ export default function QuizAttemptPage() {
         }
     };
 
-    const triggerSave = (questionId, value) => {
-        if (debounceTimers.current[questionId]) {
-            clearTimeout(debounceTimers.current[questionId]);
-        }
-        
-        setSaveStatus('Saving...');
-        debounceTimers.current[questionId] = setTimeout(async () => {
-            try {
-                await saveAnswerMutation({ 
-                    attemptId: attempt.id, 
-                    questionId, 
-                    selectedOptionId: value 
-                }).unwrap();
-                setSaveStatus('Saved');
-                setTimeout(() => setSaveStatus((prev) => prev === 'Saved' ? '' : prev), 2000);
-            } catch (err) {
-                setSaveStatus('Retrying...');
-                try {
-                    await saveAnswerMutation({ 
-                        attemptId: attempt.id, 
-                        questionId, 
-                        selectedOptionId: value 
-                    }).unwrap();
-                    setSaveStatus('Saved');
-                    setTimeout(() => setSaveStatus((prev) => prev === 'Saved' ? '' : prev), 2000);
-                } catch (retryErr) {
-                    setSaveStatus('Error saving');
-                }
-            }
-        }, 500);
-    };
-
     const handleOptionSelect = (questionId, optionId) => {
         setAnswers(prev => ({
             ...prev,
@@ -170,10 +273,16 @@ export default function QuizAttemptPage() {
 
     const handleSubmit = async () => {
         try {
+            setIsFlushing(true);
+            await flushPendingSaves();
             await submitAttempt(attempt.id).unwrap();
             setIsSubmittedSuccessfully(true);
         } catch (err) {
             // isSubmitError will handle rendering the error in the UI
+        } finally {
+            if (isMounted.current) {
+                setIsFlushing(false);
+            }
         }
     };
 
@@ -281,10 +390,10 @@ export default function QuizAttemptPage() {
 
                     <button
                         onClick={handleSubmit}
-                        disabled={isSubmitting}
+                        disabled={isSubmitting || isFlushing}
                         className="w-full mt-8 inline-flex items-center justify-center whitespace-nowrap rounded-button text-sm font-medium transition-all duration-200 ease-out bg-primary text-surface hover:bg-primary-hover shadow-soft py-2.5 px-4 disabled:opacity-50"
                     >
-                        {isSubmitting ? 'Submitting...' : 'Submit Quiz'}
+                        {isSubmitting || isFlushing ? 'Submitting...' : 'Submit Quiz'}
                     </button>
                     {isSubmitError && (
                         <p className="mt-2 text-xs font-medium text-danger text-center">
@@ -368,7 +477,7 @@ export default function QuizAttemptPage() {
                         <div className="flex items-center justify-between border-t border-border pt-6 mt-6">
                             <button
                                 onClick={handlePrevious}
-                                disabled={currentIndex === 0 || isSubmitting}
+                                disabled={currentIndex === 0 || isSubmitting || isFlushing}
                                 className="inline-flex items-center justify-center whitespace-nowrap rounded-button text-sm font-medium transition-all duration-200 border border-border bg-surface text-body hover:bg-background px-5 py-2.5 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                                 <ChevronLeft size={16} className="mr-1.5" />
@@ -378,7 +487,7 @@ export default function QuizAttemptPage() {
                             {currentIndex < totalQuestions - 1 ? (
                                 <button
                                     onClick={handleNext}
-                                    disabled={isSubmitting}
+                                    disabled={isSubmitting || isFlushing}
                                     className="inline-flex items-center justify-center whitespace-nowrap rounded-button text-sm font-medium transition-all duration-200 ease-out bg-primary text-surface hover:bg-primary-hover shadow-soft px-6 py-2.5 disabled:opacity-50"
                                 >
                                     Next
@@ -388,11 +497,11 @@ export default function QuizAttemptPage() {
                                 <div className="flex flex-col items-end gap-1">
                                     <button
                                         onClick={handleSubmit}
-                                        disabled={isSubmitting}
+                                        disabled={isSubmitting || isFlushing}
                                         className="inline-flex items-center justify-center whitespace-nowrap rounded-button text-sm font-medium transition-all duration-200 ease-out bg-success text-surface hover:bg-opacity-90 shadow-soft px-6 py-2.5 disabled:opacity-50"
                                     >
-                                        {isSubmitting && <Loader2 size={16} className="mr-2" />}
-                                        {isSubmitting ? 'Submitting...' : 'Submit Quiz'}
+                                        {(isSubmitting || isFlushing) && <Loader2 size={16} className="mr-2" />}
+                                        {isSubmitting || isFlushing ? 'Submitting...' : 'Submit Quiz'}
                                     </button>
                                     {isSubmitError && (
                                         <span className="text-xs font-medium text-danger">
