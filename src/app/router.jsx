@@ -17,3 +17,4 @@ export const router = createBrowserRouter([
     { path: '/invite/:token', element: <InvitationPage /> },
     { path: '*', element: <NotFound /> },
 ])
+
