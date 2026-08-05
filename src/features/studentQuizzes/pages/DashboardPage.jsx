@@ -1,4 +1,3 @@
-import React from 'react';
 import QuizzesList from '../components/QuizzesList';
 import AppHeader from '../../../shared/components/AppHeader';
 

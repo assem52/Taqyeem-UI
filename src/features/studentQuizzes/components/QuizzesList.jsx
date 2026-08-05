@@ -1,4 +1,3 @@
-import React from 'react';
 import { useGetStudentQuizzesQuery } from '../studentQuizzesApi';
 import QuizCard from './QuizCard';
 import { Loader2, AlertCircle, HelpCircle } from '../../../shared/components/Icons';

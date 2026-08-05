@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useGetInvitationQuery } from '../studentQuizzesApi';
 import AccessDenied from '../../../shared/components/AccessDenied';
 import QuizClosed from '../../../shared/components/QuizClosed';

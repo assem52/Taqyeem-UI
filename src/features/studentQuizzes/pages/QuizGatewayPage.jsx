@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useGetStudentQuizQuery, useStartAttemptMutation } from '../studentQuizzesApi';
 import StatusPill from '../components/StatusPill';
@@ -20,7 +19,7 @@ export default function QuizGatewayPage() {
     try {
       await startAttempt(quizId).unwrap();
       navigate(`/quizzes/${quizId}/attempt`);
-    } catch (e) {
+    } catch {
       // Error is handled by isStartError in the UI
     }
   };

@@ -1,9 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useGetAttemptQuery, useGetStudentQuizQuery, useSaveAnswerMutation, useSubmitAttemptMutation } from '../studentQuizzesApi';
 import MessagePage from '../../../shared/components/MessagePage';
 import { 
-  Clock, 
   ChevronLeft, 
   ChevronRight, 
   Wifi, 
@@ -15,7 +14,7 @@ import {
 
 export default function QuizAttemptPage() {
     const { quizId } = useParams();
-    const { data: attempt, isLoading, isError, error } = useGetAttemptQuery(quizId);
+    const { data: attempt, isLoading, isError } = useGetAttemptQuery(quizId);
     const { data: quiz } = useGetStudentQuizQuery(quizId);
     const [saveAnswerMutation] = useSaveAnswerMutation();
     const [submitAttempt, { isLoading: isSubmitting, isError: isSubmitError }] = useSubmitAttemptMutation();
@@ -51,7 +50,7 @@ export default function QuizAttemptPage() {
         if (existingInFlight) {
             try {
                 await existingInFlight;
-            } catch (_) {
+            } catch {
                 // Ignore error from previous save attempt and proceed with latest value
             }
         }
@@ -66,7 +65,7 @@ export default function QuizAttemptPage() {
                 }).unwrap();
                 safeSetSaveStatus('Saved');
                 setTimeout(() => safeSetSaveStatus((prev) => (prev === 'Saved' ? '' : prev)), 2000);
-            } catch (err) {
+            } catch {
                 safeSetSaveStatus('Retrying...');
                 try {
                     await saveAnswerMutation({ 
@@ -76,7 +75,7 @@ export default function QuizAttemptPage() {
                     }).unwrap();
                     safeSetSaveStatus('Saved');
                     setTimeout(() => safeSetSaveStatus((prev) => (prev === 'Saved' ? '' : prev)), 2000);
-                } catch (retryErr) {
+                } catch {
                     safeSetSaveStatus('Error saving');
                 }
             }
@@ -155,6 +154,7 @@ export default function QuizAttemptPage() {
                     }
                 }
             }
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setAnswers(restoredAnswers);
             
             if (attempt.questions && attempt.questions.length > 0) {
@@ -172,16 +172,19 @@ export default function QuizAttemptPage() {
 
     useEffect(() => {
         isMounted.current = true;
+        const currentTimers = debounceTimers.current;
+        const currentPending = pendingAnswers.current;
+
         return () => {
             isMounted.current = false;
             
-            const pendingTimerQuestionIds = Object.keys(debounceTimers.current);
+            const pendingTimerQuestionIds = Object.keys(currentTimers);
             for (const qId of pendingTimerQuestionIds) {
-                clearTimeout(debounceTimers.current[qId]);
-                delete debounceTimers.current[qId];
+                clearTimeout(currentTimers[qId]);
+                delete currentTimers[qId];
 
-                const value = pendingAnswers.current[qId];
-                delete pendingAnswers.current[qId];
+                const value = currentPending[qId];
+                delete currentPending[qId];
 
                 const attemptId = attemptIdRef.current;
                 if (value !== undefined && attemptId) {
@@ -277,7 +280,7 @@ export default function QuizAttemptPage() {
             await flushPendingSaves();
             await submitAttempt(attempt.id).unwrap();
             setIsSubmittedSuccessfully(true);
-        } catch (err) {
+        } catch {
             // isSubmitError will handle rendering the error in the UI
         } finally {
             if (isMounted.current) {

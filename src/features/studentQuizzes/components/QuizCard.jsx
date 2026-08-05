@@ -1,11 +1,9 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import StatusPill from './StatusPill';
 import { formatClosesAt } from '../../../shared/utils/formatDate';
-import { Clock, Calendar, PlayCircle, HelpCircle } from '../../../shared/components/Icons';
+import { Clock, Calendar, PlayCircle } from '../../../shared/components/Icons';
 
 export default function QuizCard({ quiz }) {
-  const isAvailable = quiz.canStart;
 
   return (
     <article className="bg-surface text-body rounded-card shadow-soft border-border border flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md h-full">
