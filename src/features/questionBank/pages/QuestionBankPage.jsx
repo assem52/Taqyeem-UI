@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGetAdminQuizByIdQuery } from '../../adminQuizzes/adminQuizzesApi';
 import DuplicateQuizButton from '../components/DuplicateQuizButton';
 import QuestionCard from '../components/QuestionCard';
 import QuestionForm from '../components/QuestionForm';
+import AdminShell from '../../../shared/components/AdminShell';
 import {
   useCreateQuestionMutation,
   useGetQuizQuestionsQuery,
@@ -78,9 +79,8 @@ export default function QuestionBankPage() {
     return () => window.removeEventListener('beforeunload', warnBeforeUnload);
   }, [isDirty]);
 
-  const leavePage = (event) => {
-    event.preventDefault();
-    if (!isDirty || window.confirm('Leave and discard your unsaved question changes?')) {
+  const leavePage = () => {
+    if (!isDirty || window.confirm('Leave and discard unsaved question changes?')) {
       navigate('/admin/quizzes');
     }
   };
@@ -98,10 +98,10 @@ export default function QuestionBankPage() {
         questionId: questionId(editingQuestion),
         body,
       }).unwrap();
-      setAlert('Question updated successfully.');
+      setAlert('Question updated.');
     } else {
       await createQuestion({ quizId, body }).unwrap();
-      setAlert('Question added successfully.');
+      setAlert('Question added.');
     }
     setActionError('');
     closeForm();
@@ -116,13 +116,13 @@ export default function QuestionBankPage() {
     ];
     const questionIds = reordered.map(questionId);
     if (questionIds.some((id) => !id)) {
-      setActionError('One or more questions have no ID, so their order cannot be saved.');
+      setActionError('One or more questions are missing an ID, so order cannot be saved.');
       return;
     }
     setActionError('');
     try {
       await reorderQuestions({ quizId, questionIds }).unwrap();
-      setAlert('Question order updated.');
+      setAlert('Order updated.');
     } catch (error) {
       setActionError(errorMessage(error, 'Failed to reorder questions.'));
     }
@@ -138,18 +138,12 @@ export default function QuestionBankPage() {
       }).unwrap();
       setAlert(question.isHidden ? 'Question restored.' : 'Question hidden.');
     } catch (error) {
-      setActionError(errorMessage(error, 'Failed to update question visibility.'));
+      setActionError(errorMessage(error, 'Failed to update visibility.'));
     }
   };
 
   const handleRemove = async (question) => {
-    if (
-      !window.confirm(
-        `Remove "${question.text}"? This removes it from the active question bank.`,
-      )
-    ) {
-      return;
-    }
+    if (!window.confirm(`Remove “${question.text}” from this quiz?`)) return;
     setActionError('');
     try {
       await removeQuestion({
@@ -164,14 +158,14 @@ export default function QuestionBankPage() {
   };
 
   const openEditor = (question) => {
-    if (isDirty && !window.confirm('Discard your current unsaved question changes?')) return;
+    if (isDirty && !window.confirm('Discard unsaved question changes?')) return;
     setIsAdding(false);
     setEditingQuestion(question);
     setIsDirty(false);
   };
 
   const openAddForm = () => {
-    if (isDirty && !window.confirm('Discard your current unsaved question changes?')) return;
+    if (isDirty && !window.confirm('Discard unsaved question changes?')) return;
     setEditingQuestion(null);
     setIsAdding(true);
     setIsDirty(false);
@@ -181,150 +175,135 @@ export default function QuestionBankPage() {
   const hasLoadError = quizQuery.isError || questionsQuery.isError;
 
   return (
-    <div className="min-h-screen bg-slate-950 font-sans text-slate-100">
-      <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-6 lg:px-8">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-lg font-bold shadow-md shadow-blue-500/20">
-              Q
-            </div>
-            <div className="min-w-0">
-              <h1 className="truncate text-lg font-bold">Question Bank</h1>
-              <p className="truncate text-xs text-slate-400">{quiz?.title || 'Quiz questions'}</p>
-            </div>
-          </div>
-          <Link
-            to="/admin/quizzes"
+    <AdminShell
+      title={quiz?.title || 'Questions'}
+      subtitle="Author multiple-choice and true/false questions for this quiz."
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
             onClick={leavePage}
-            className="rounded-lg px-3.5 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+            className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2 text-sm font-medium"
           >
-            ← Back to quizzes
-          </Link>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
-        {isLoading ? (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-16 text-center text-slate-400">
-            <div className="mb-3 inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
-            <p>Loading question bank…</p>
-          </div>
-        ) : hasLoadError ? (
-          <div role="alert" className="rounded-2xl border border-rose-500/30 bg-slate-900 p-8 text-center">
-            <p className="mb-4 text-rose-300">
-              {errorMessage(
-                quizQuery.error ?? questionsQuery.error,
-                'The question bank could not be loaded.',
-              )}
-            </p>
+            Back to quizzes
+          </button>
+          <DuplicateQuizButton
+            quiz={quiz}
+            onError={setActionError}
+            className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2 text-sm font-medium"
+          >
+            Duplicate
+          </DuplicateQuizButton>
+          {!readOnly && (
             <button
               type="button"
-              onClick={() => {
-                quizQuery.refetch();
-                questionsQuery.refetch();
-              }}
-              className="rounded-xl bg-slate-800 px-5 py-2 text-sm font-semibold hover:bg-slate-700"
+              onClick={openAddForm}
+              disabled={isMutating || isLoading}
+              className="bg-primary hover:bg-primary-hover rounded-button px-3.5 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
-              Try again
+              Add question
             </button>
-          </div>
-        ) : (
-          <>
-            <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 shadow-xl">
-              <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-2xl font-extrabold">{quiz?.title}</h2>
-                    <span className="rounded-full border border-slate-700 px-2.5 py-1 text-xs font-bold text-slate-400">
-                      {questions.length} {questions.length === 1 ? 'question' : 'questions'}
-                    </span>
-                    {questionsQuery.isFetching && (
-                      <span className="text-xs text-blue-300" role="status">Refreshing…</span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Build and order multiple-choice and true/false questions.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <DuplicateQuizButton
-                    quiz={quiz}
-                    onError={setActionError}
-                    className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-2 text-sm font-bold text-indigo-300 hover:bg-indigo-500/20"
-                  >
-                    Duplicate quiz
-                  </DuplicateQuizButton>
-                  {!readOnly && (
-                    <button
-                      type="button"
-                      onClick={openAddForm}
-                      disabled={isMutating}
-                      className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-500 disabled:opacity-50"
-                    >
-                      + Add question
-                    </button>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {readOnly && (
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-200">
-                <strong>Read-only:</strong> This quiz has student attempts, so its question structure is locked. Duplicate it to create an editable copy.
-              </div>
+          )}
+        </div>
+      }
+    >
+      {isLoading ? (
+        <p className="text-muted py-16 text-center text-sm">Loading questions…</p>
+      ) : hasLoadError ? (
+        <div role="alert" className="border-border bg-surface rounded-card border px-6 py-10 text-center">
+          <p className="text-danger text-sm">
+            {errorMessage(
+              quizQuery.error ?? questionsQuery.error,
+              'The question bank could not be loaded.',
             )}
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              quizQuery.refetch();
+              questionsQuery.refetch();
+            }}
+            className="border-border text-heading hover:bg-background mt-4 rounded-button border px-4 py-2 text-sm font-medium"
+          >
+            Retry
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          <p className="text-muted text-sm">
+            {questions.length} {questions.length === 1 ? 'question' : 'questions'}
+            {questionsQuery.isFetching ? ' · Refreshing…' : ''}
+          </p>
 
-            {quiz?.validationErrors?.length > 0 && (
-              <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300">
-                <p className="font-semibold">Quiz validation issues:</p>
-                <ul className="mt-1 list-disc space-y-1 pl-5">
-                  {quiz.validationErrors.map((message) => <li key={message}>{message}</li>)}
-                </ul>
-              </div>
-            )}
+          {readOnly && (
+            <div className="border-warning/25 bg-warning/5 text-warning rounded-card border px-4 py-3 text-sm">
+              This quiz has student attempts, so its structure is locked. Duplicate it to create an
+              editable draft.
+            </div>
+          )}
 
-            {actionError && (
-              <div role="alert" className="flex items-start justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm text-rose-300">
-                <span>{actionError}</span>
-                <button type="button" onClick={() => setActionError('')} aria-label="Dismiss error" className="font-bold">×</button>
-              </div>
-            )}
-            {alert && (
-              <div role="status" className="flex items-start justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
-                <span>{alert}</span>
-                <button type="button" onClick={() => setAlert('')} aria-label="Dismiss message" className="font-bold">×</button>
-              </div>
-            )}
+          {quiz?.validationErrors?.length > 0 && (
+            <div className="border-danger/20 bg-danger/5 text-danger rounded-card border px-4 py-3 text-sm">
+              <p className="font-medium">Publish blockers</p>
+              <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs">
+                {quiz.validationErrors.map((message) => (
+                  <li key={message}>{message}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-            {(isAdding || editingQuestion) && !readOnly && (
-              <QuestionForm
-                key={editingQuestion ? questionId(editingQuestion) : 'new'}
-                question={editingQuestion}
-                onSave={saveQuestion}
-                onCancel={closeForm}
-                isSaving={createState.isLoading || updateState.isLoading}
-                onDirtyChange={setIsDirty}
-              />
-            )}
+          {actionError && (
+            <div role="alert" className="border-danger/20 bg-danger/5 text-danger flex justify-between gap-3 rounded-card border px-4 py-3 text-sm">
+              <span>{actionError}</span>
+              <button type="button" onClick={() => setActionError('')} className="font-medium">
+                Close
+              </button>
+            </div>
+          )}
+          {alert && (
+            <div role="status" className="border-success/20 bg-success/5 text-success flex justify-between gap-3 rounded-card border px-4 py-3 text-sm">
+              <span>{alert}</span>
+              <button type="button" onClick={() => setAlert('')} className="font-medium">
+                Close
+              </button>
+            </div>
+          )}
 
-            {questions.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-12 text-center">
-                <div className="mb-3 text-4xl">📝</div>
-                <h2 className="text-lg font-bold">No questions yet</h2>
-                <p className="mt-1 text-sm text-slate-400">
-                  {readOnly ? 'This quiz has no active questions.' : 'Add the first question to start building this quiz.'}
-                </p>
-                {!readOnly && !isAdding && (
-                  <button type="button" onClick={openAddForm} className="mt-5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold hover:bg-blue-500">
-                    Add first question
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {questions.map((question, index) => (
+          {(isAdding || editingQuestion) && !readOnly && (
+            <QuestionForm
+              key={editingQuestion ? questionId(editingQuestion) : 'new'}
+              question={editingQuestion}
+              onSave={saveQuestion}
+              onCancel={closeForm}
+              isSaving={createState.isLoading || updateState.isLoading}
+              onDirtyChange={setIsDirty}
+            />
+          )}
+
+          {questions.length === 0 ? (
+            <div className="border-border bg-surface rounded-card border px-6 py-14 text-center">
+              <h2 className="font-display text-heading text-xl">No questions yet</h2>
+              <p className="text-muted mx-auto mt-2 max-w-sm text-sm">
+                {readOnly
+                  ? 'This quiz has no active questions.'
+                  : 'Add the first multiple-choice or true/false question.'}
+              </p>
+              {!readOnly && !isAdding && (
+                <button
+                  type="button"
+                  onClick={openAddForm}
+                  className="bg-primary hover:bg-primary-hover mt-6 rounded-button px-4 py-2.5 text-sm font-semibold text-white"
+                >
+                  Add first question
+                </button>
+              )}
+            </div>
+          ) : (
+            <ol className="border-border bg-surface divide-border divide-y overflow-hidden rounded-card border">
+              {questions.map((question, index) => (
+                <li key={questionId(question) ?? index}>
                   <QuestionCard
-                    key={questionId(question) ?? index}
                     question={question}
                     index={index}
                     count={questions.length}
@@ -335,12 +314,12 @@ export default function QuestionBankPage() {
                     onToggleVisibility={toggleVisibility}
                     onRemove={handleRemove}
                   />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </main>
-    </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+    </AdminShell>
   );
 }

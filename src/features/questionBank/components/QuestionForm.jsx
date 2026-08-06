@@ -1,7 +1,9 @@
 import { useState } from 'react';
 
 const inputClass =
-  'w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-100 outline-hidden transition focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-60';
+  'border-border bg-background text-heading placeholder:text-muted focus:border-primary focus:ring-primary/20 w-full rounded-input border px-3.5 py-2.5 text-sm outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50';
+
+const labelClass = 'text-heading mb-1.5 block text-sm font-medium';
 
 function initialOptions(question, type) {
   if (type === 'TRUE_FALSE') {
@@ -146,27 +148,28 @@ export default function QuestionForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-5 rounded-2xl border border-blue-500/30 bg-slate-900 p-5 shadow-xl"
+      className="border-border bg-surface space-y-5 rounded-card border p-5"
     >
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-bold text-slate-100">
+        <h2 className="font-display text-heading text-xl">
           {question ? 'Edit question' : 'Add question'}
         </h2>
-        <span className="text-xs text-slate-500">* Required</span>
       </div>
 
       {serverErrors.length > 0 && (
-        <div role="alert" className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-300">
-          <p className="font-semibold">The question could not be saved:</p>
-          <ul className="mt-1 list-disc space-y-1 pl-5">
-            {serverErrors.map((message) => <li key={message}>{message}</li>)}
+        <div role="alert" className="border-danger/20 bg-danger/5 text-danger rounded-button border px-3 py-2 text-sm">
+          <p className="font-medium">Could not save</p>
+          <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs">
+            {serverErrors.map((message) => (
+              <li key={message}>{message}</li>
+            ))}
           </ul>
         </div>
       )}
 
       <div>
-        <label htmlFor="question-text" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-          Question text *
+        <label htmlFor="question-text" className={labelClass}>
+          Question text
         </label>
         <textarea
           id="question-text"
@@ -181,13 +184,17 @@ export default function QuestionForm({
           aria-describedby={fieldErrors.text ? 'question-text-error' : undefined}
           autoFocus
         />
-        {fieldErrors.text && <p id="question-text-error" className="mt-1 text-xs text-rose-300">{fieldErrors.text}</p>}
+        {fieldErrors.text && (
+          <p id="question-text-error" className="text-danger mt-1 text-xs">
+            {fieldErrors.text}
+          </p>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="question-type" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Type *
+          <label htmlFor="question-type" className={labelClass}>
+            Type
           </label>
           <select
             id="question-type"
@@ -198,11 +205,10 @@ export default function QuestionForm({
             <option value="MCQ">Multiple choice</option>
             <option value="TRUE_FALSE">True / False</option>
           </select>
-          <p className="mt-1 text-xs text-slate-500">Open-ended authoring is not supported.</p>
         </div>
         <div>
-          <label htmlFor="question-points" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400">
-            Points *
+          <label htmlFor="question-points" className={labelClass}>
+            Points
           </label>
           <input
             id="question-points"
@@ -217,13 +223,16 @@ export default function QuestionForm({
             className={inputClass}
             aria-invalid={Boolean(fieldErrors.points)}
           />
-          {fieldErrors.points && <p className="mt-1 text-xs text-rose-300">{fieldErrors.points}</p>}
+          {fieldErrors.points && (
+            <p className="text-danger mt-1 text-xs">{fieldErrors.points}</p>
+          )}
         </div>
       </div>
 
       <fieldset>
-        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-          Answers * <span className="normal-case font-normal text-slate-500">— choose one correct answer</span>
+        <legend className={labelClass}>
+          Answers
+          <span className="text-muted ml-1 font-normal">— select one correct option</span>
         </legend>
         <div className="space-y-2">
           {options.map((option, index) => (
@@ -234,7 +243,7 @@ export default function QuestionForm({
                 checked={option.isCorrect}
                 onChange={() => chooseCorrect(index)}
                 aria-label={`Mark option ${index + 1} correct`}
-                className="h-4 w-4 accent-blue-500"
+                className="accent-primary h-4 w-4"
               />
               <input
                 type="text"
@@ -248,10 +257,12 @@ export default function QuestionForm({
                 <button
                   type="button"
                   onClick={() => {
-                    setOptions((current) => current.filter((_, optionIndex) => optionIndex !== index));
+                    setOptions((current) =>
+                      current.filter((_, optionIndex) => optionIndex !== index),
+                    );
                     markDirty();
                   }}
-                  className="rounded-lg px-2 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/10"
+                  className="text-danger px-2 py-2 text-xs font-medium"
                   aria-label={`Remove option ${index + 1}`}
                 >
                   Remove
@@ -260,7 +271,9 @@ export default function QuestionForm({
             </div>
           ))}
         </div>
-        {fieldErrors.options && <p className="mt-2 text-xs text-rose-300">{fieldErrors.options}</p>}
+        {fieldErrors.options && (
+          <p className="text-danger mt-2 text-xs">{fieldErrors.options}</p>
+        )}
         {type === 'MCQ' && (
           <button
             type="button"
@@ -268,26 +281,26 @@ export default function QuestionForm({
               setOptions((current) => [...current, { option: '', isCorrect: false }]);
               markDirty();
             }}
-            className="mt-3 rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+            className="border-border text-heading hover:bg-background mt-3 rounded-button border px-3 py-1.5 text-xs font-medium"
           >
-            + Add option
+            Add option
           </button>
         )}
       </fieldset>
 
-      <div className="flex flex-wrap justify-end gap-2 border-t border-slate-800 pt-4">
+      <div className="border-border flex flex-wrap justify-end gap-2 border-t pt-4">
         <button
           type="button"
           onClick={handleCancel}
           disabled={isSaving}
-          className="rounded-xl px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800 disabled:opacity-50"
+          className="border-border text-heading hover:bg-background rounded-button border px-4 py-2 text-sm font-medium disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isSaving}
-          className="rounded-xl bg-blue-600 px-5 py-2 text-sm font-bold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
         >
           {isSaving ? 'Saving…' : question ? 'Save changes' : 'Add question'}
         </button>
