@@ -5,12 +5,14 @@ export interface QuizOption {
   quizTitle: string
 }
 
-export function deriveQuizOptions(groups: FollowUpGroup[]): QuizOption[] {
+export function deriveQuizOptions(groups?: FollowUpGroup[]): QuizOption[] {
   const quizzes = new Map<string, string>()
 
-  for (const group of groups) {
-    for (const learner of group.learners) {
-      quizzes.set(learner.quizId, learner.quizTitle)
+  for (const group of groups ?? []) {
+    for (const learner of group?.learners ?? []) {
+      if (learner?.quizId && learner?.quizTitle) {
+        quizzes.set(learner.quizId, learner.quizTitle)
+      }
     }
   }
 

@@ -19,7 +19,7 @@ export default function FollowUpSummary({ summary }) {
     <section aria-label="Follow-up summary" className="mb-8">
       <div className="mb-3 rounded-lg bg-slate-900 p-4 text-white">
         <p className="text-sm text-slate-300">Total requiring follow-up</p>
-        <p className="mt-1 text-3xl font-semibold">{summary.total}</p>
+        <p className="mt-1 text-3xl font-semibold">{summary?.total ?? 0}</p>
       </div>
 
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -30,7 +30,7 @@ export default function FollowUpSummary({ summary }) {
           >
             <dt className="text-xs font-medium text-slate-500">{label}</dt>
             <dd className="mt-1 text-xl font-semibold text-slate-900">
-              {summary.byReason[reason] ?? 0}
+              {summary?.byReason?.[reason] ?? 0}
             </dd>
           </div>
         ))}

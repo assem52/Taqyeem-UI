@@ -1,12 +1,12 @@
-import { Link } from 'react-router-dom'
+import MessagePage from './MessagePage';
+import { AlertCircle } from './Icons';
 
 export default function NotFound() {
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="mb-2 text-xl font-semibold text-slate-900">Page not found</h1>
-      <Link to="/" className="text-sm text-slate-700 underline">
-        Back to dashboard
-      </Link>
-    </main>
-  )
+    <MessagePage 
+      icon={AlertCircle}
+      title="Page not found" 
+      description="The page you are looking for does not exist." 
+    />
+  );
 }
