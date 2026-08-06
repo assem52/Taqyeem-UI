@@ -9,6 +9,7 @@ import {
 import QuizDetailModal from '../components/QuizDetailModal';
 import BulkInviteModal from '../components/BulkInviteModal';
 import InvitationTrackerTable from '../components/InvitationTrackerTable';
+import DuplicateQuizButton from '../../questionBank/components/DuplicateQuizButton';
 
 export default function AdminQuizzesListPage() {
   const [search, setSearch] = useState('');
@@ -295,7 +296,27 @@ export default function AdminQuizzesListPage() {
 
                   {/* Action Toolbar */}
                   <div className="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link
+                        to={`/admin/quizzes/${quiz.quizId}/questions`}
+                        title={quiz.hasAttempts ? 'View questions (read-only because attempts exist)' : 'Manage questions'}
+                        className="px-3.5 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-semibold rounded-lg transition"
+                      >
+                        ❓ {quiz.hasAttempts ? 'View Questions (Read-only)' : 'Manage Questions'}
+                      </Link>
+
+                      <DuplicateQuizButton
+                        quiz={quiz}
+                        onError={(message) => setActionError(message ? `[Quiz: "${quiz.title}"] ${message}` : '')}
+                        className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg border transition ${
+                          quiz.hasAttempts
+                            ? 'bg-indigo-600 text-white border-indigo-500 hover:bg-indigo-500'
+                            : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20'
+                        }`}
+                      >
+                        ⧉ {quiz.hasAttempts ? 'Duplicate to Edit' : 'Duplicate'}
+                      </DuplicateQuizButton>
+
                       <button
                         onClick={() => handleOpenEdit(quiz)}
                         className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg transition cursor-pointer"
