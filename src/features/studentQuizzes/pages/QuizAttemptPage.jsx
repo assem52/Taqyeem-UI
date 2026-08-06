@@ -145,20 +145,10 @@ export default function QuizAttemptPage() {
     useEffect(() => {
         if (attempt && !isRestored) {
             const restoredAnswers = {};
-            if (attempt.attemptAnswers) {
-                if (Array.isArray(attempt.attemptAnswers)) {
-                    for (const item of attempt.attemptAnswers) {
-                        if (item && item.questionId) {
-                            restoredAnswers[item.questionId] = item.selectedOptionId ?? item.selectedOption ?? item.answer ?? '';
-                        }
-                    }
-                } else if (typeof attempt.attemptAnswers === 'object') {
-                    for (const [qId, data] of Object.entries(attempt.attemptAnswers)) {
-                        if (data && typeof data === 'object') {
-                            restoredAnswers[qId] = data.selectedOptionId ?? data.optionId ?? data.answer ?? '';
-                        } else if (typeof data === 'string') {
-                            restoredAnswers[qId] = data;
-                        }
+            if (attempt.attemptAnswers && typeof attempt.attemptAnswers === 'object') {
+                for (const [qId, data] of Object.entries(attempt.attemptAnswers)) {
+                    if (data?.selectedOptionId != null) {
+                        restoredAnswers[qId] = data.selectedOptionId;
                     }
                 }
             }
