@@ -6,9 +6,11 @@ import AdminQuizzesListPage from "../features/adminQuizzes/pages/AdminQuizzesLis
 import InvitationPage from "../features/studentQuizzes/pages/InvitationPage";
 import QuizAttemptPage from "../features/studentQuizzes/pages/QuizAttemptPage";
 import NotFound from "../shared/components/NotFound";
+import LoginPage from "../features/auth/pages/LoginPage";
 
 export const router = createBrowserRouter([
     { path: '/', element: <DashboardPage /> },
+    { path: '/login', element: <LoginPage /> },
     { path: '/quizzes/:quizId', element: <QuizGatewayPage /> },
     { path: '/admin', element: <Navigate to="/admin/quizzes" replace /> },
     { path: '/admin/quizzes', element: <AdminQuizzesListPage /> },
