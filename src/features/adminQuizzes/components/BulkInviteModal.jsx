@@ -166,13 +166,24 @@ export default function BulkInviteModal({ isOpen, onClose, quiz }) {
           ) : (
             /* Results Summary Section */
             <div className="space-y-5">
+              {summaryResult.deliveryMode === 'simulated' && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center space-x-2">
+                  <span>⚠️</span>
+                  <span>
+                    <strong>Simulated Mode Active:</strong> {summaryResult.sent} invitation{summaryResult.sent === 1 ? '' : 's'} logged locally — no network email sent (SMTP_HOST unconfigured).
+                  </span>
+                </div>
+              )}
+
               <div className="grid grid-cols-5 gap-2 text-center">
                 <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
                   <div className="text-xs text-slate-400">Total</div>
                   <div className="text-lg font-bold text-slate-100">{summaryResult.total}</div>
                 </div>
                 <div className="bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/30">
-                  <div className="text-xs text-emerald-400">Sent</div>
+                  <div className="text-xs text-emerald-400">
+                    {summaryResult.deliveryMode === 'simulated' ? 'Simulated' : 'Sent'}
+                  </div>
                   <div className="text-lg font-bold text-emerald-400">{summaryResult.sent}</div>
                 </div>
                 <div className="bg-amber-500/10 p-3 rounded-xl border border-amber-500/30">
@@ -209,7 +220,7 @@ export default function BulkInviteModal({ isOpen, onClose, quiz }) {
                           <td className="p-3">
                             {res.status === 'SENT' && (
                               <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
-                                SENT
+                                {summaryResult.deliveryMode === 'simulated' ? 'SIMULATED' : 'SENT'}
                               </span>
                             )}
                             {res.status === 'DUPLICATE' && (
@@ -229,7 +240,7 @@ export default function BulkInviteModal({ isOpen, onClose, quiz }) {
                             )}
                           </td>
                           <td className="p-3 text-slate-400 italic">
-                            {res.reason || '—'}
+                            {res.reason || (summaryResult.deliveryMode === 'simulated' ? 'Logged in simulated mode' : '—')}
                           </td>
                         </tr>
                       ))}
