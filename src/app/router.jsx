@@ -7,6 +7,12 @@ import QuestionBankPage from "../features/questionBank/pages/QuestionBankPage";
 import InvitationPage from "../features/studentQuizzes/pages/InvitationPage";
 import QuizAttemptPage from "../features/studentQuizzes/pages/QuizAttemptPage";
 import NotFound from "../shared/components/NotFound";
+import LoginPage from "../features/auth/pages/LoginPage";
+
+function RequireAuth({ children }) {
+  const token = localStorage.getItem('token');
+  return token ? children : <Navigate to="/login" replace />;
+}
 
 export const router = createBrowserRouter([
     { path: '/', element: <DashboardPage /> },
@@ -18,5 +24,4 @@ export const router = createBrowserRouter([
     { path: '/quizzes/:quizId/attempt', element: <QuizAttemptPage /> },
     { path: '/invite/:token', element: <InvitationPage /> },
     { path: '*', element: <NotFound /> },
-])
-
+]);
