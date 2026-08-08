@@ -18,10 +18,12 @@ export default function LoginPage() {
     try {
       const response = await login({ email, password }).unwrap();
       
-      if (response.access_token) {
-        localStorage.setItem('token', response.access_token);
+      if (!response || !response.access_token) {
+        setErrorMsg('Login succeeded but no token was returned. Please try again.');
+        return;
       }
 
+      localStorage.setItem('token', response.access_token);
       navigate('/');
     } catch (err) {
       setErrorMsg(err?.data?.message || 'Invalid email or password. Please try again.');
