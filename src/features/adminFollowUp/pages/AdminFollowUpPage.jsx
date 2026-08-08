@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useGetAdminFollowUpQuery } from '../adminFollowUpApi'
 import { formatDateTime } from '../../../shared/utils/formatDate'
+import AdminShell from '../../../shared/components/AdminShell'
 import FollowUpGroups from '../components/FollowUpGroups'
 import FollowUpSummary from '../components/FollowUpSummary'
 import QuizFilter from '../components/QuizFilter'
@@ -18,20 +19,15 @@ export default function AdminFollowUpPage() {
   const quizOptions = deriveQuizOptions(allFollowUps.data?.groups ?? [])
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8">
-      <header className="mb-6">
-        <h1 className="mb-1 text-2xl font-semibold text-slate-900">
-          Morning follow-up
-        </h1>
-        <p className="text-sm text-slate-500">
-          Learners who need an actionable follow-up across published quizzes.
+    <AdminShell
+      title="Morning follow-up"
+      subtitle="Learners who need an actionable next step across published quizzes."
+    >
+      {data ? (
+        <p className="text-muted -mt-4 mb-6 text-xs">
+          Generated {formatDateTime(data.generatedAt)}
         </p>
-        {data ? (
-          <p className="mt-2 text-xs text-slate-400">
-            Generated {formatDateTime(data.generatedAt)}
-          </p>
-        ) : null}
-      </header>
+      ) : null}
 
       <QuizFilter
         disabled={allFollowUps.isLoading || allFollowUps.isError}
@@ -40,26 +36,19 @@ export default function AdminFollowUpPage() {
         selectedQuizId={selectedQuizId}
       />
 
-      {isLoading ? (
-        <p className="text-sm text-slate-500">Loading follow-up list…</p>
-      ) : null}
+      {isLoading ? <p className="text-muted text-sm">Loading follow-up list…</p> : null}
 
       {isFetching && !isLoading ? (
-        <p className="mb-3 text-xs text-slate-400" role="status">
-          Refreshing follow-up list…
+        <p className="text-muted mb-3 text-xs" role="status">
+          Refreshing…
         </p>
       ) : null}
 
       {isError ? (
-        <div
-          className="rounded border border-red-200 bg-red-50 p-4"
-          role="alert"
-        >
-          <p className="mb-3 text-sm text-red-800">
-            Unable to load the follow-up list. Please try again.
-          </p>
+        <div className="border-danger/20 bg-danger/5 rounded-card border p-4" role="alert">
+          <p className="text-danger mb-3 text-sm">Unable to load the follow-up list.</p>
           <button
-            className="rounded bg-red-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-600"
+            className="bg-primary hover:bg-primary-hover rounded-button px-3 py-1.5 text-sm font-semibold text-white"
             onClick={refetch}
             type="button"
           >
@@ -74,6 +63,6 @@ export default function AdminFollowUpPage() {
           <FollowUpGroups groups={data.groups} />
         </>
       ) : null}
-    </main>
+    </AdminShell>
   )
 }
