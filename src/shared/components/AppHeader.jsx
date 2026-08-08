@@ -35,6 +35,18 @@ export default function AppHeader() {
           <span className="bg-danger absolute right-2 top-2 h-2 w-2 rounded-full border border-surface"></span>
         </button>
 
+        <button
+          type="button"
+          className="text-sm font-medium text-muted hover:text-heading px-2 py-1 rounded-md hover:bg-background"
+          onClick={() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('role');
+            window.location.href = '/login';
+          }}
+        >
+          Log out
+        </button>
+
         {/* Profile Avatar / User Badge */}
         <div 
           className="h-8 w-8 rounded-full bg-primary-soft text-primary font-medium text-sm flex items-center justify-center border border-border" 
