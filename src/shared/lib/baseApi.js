@@ -24,6 +24,10 @@ const rawBaseQuery = fetchBaseQuery({
 const baseQueryWithReauth = async (args, api, extraOptions) => {
     let result = await rawBaseQuery(args, api, extraOptions);
 
+    const isAuthRequest = typeof args === 'string'
+      ? args.includes('/auth/')
+      : args?.url?.includes('/auth/');
+
     if (result.error && result.error.status === 401) {
         localStorage.removeItem('token');
         window.location.href = '/login';

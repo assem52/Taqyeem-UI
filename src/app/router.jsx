@@ -41,7 +41,7 @@ export const router = createBrowserRouter([
     },
     { 
       path: '/invite/:token', 
-      element: <RequireAuth><InvitationPage /></RequireAuth> 
+      element: <InvitationPage /> 
     },
     { path: '*', element: <NotFound /> },
 ]);
