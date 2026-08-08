@@ -8,20 +8,114 @@ import InvitationPage from "../features/studentQuizzes/pages/InvitationPage";
 import QuizAttemptPage from "../features/studentQuizzes/pages/QuizAttemptPage";
 import NotFound from "../shared/components/NotFound";
 import LoginPage from "../features/auth/pages/LoginPage";
+import RegisterPage from "../features/auth/pages/RegisterPage";
 
 function RequireAuth({ children }) {
   const token = localStorage.getItem('token');
   return token ? children : <Navigate to="/login" replace />;
 }
 
+/** Role gate — keeps students out of /admin and admins off the student home by default. */
+function RequireRole({ role, children }) {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const currentRole = localStorage.getItem('role');
+  if (!currentRole) {
+    localStorage.removeItem('token');
+    return <Navigate to="/login" replace />;
+  }
+
+  if (currentRole !== role) {
+    return (
+      <Navigate
+        to={currentRole === 'ADMIN' ? '/admin/quizzes' : '/'}
+        replace
+      />
+    );
+  }
+
+  return children;
+}
+
 export const router = createBrowserRouter([
-    { path: '/', element: <DashboardPage /> },
-    { path: '/quizzes/:quizId', element: <QuizGatewayPage /> },
-    { path: '/admin', element: <Navigate to="/admin/quizzes" replace /> },
-    { path: '/admin/quizzes', element: <AdminQuizzesListPage /> },
-    { path: '/admin/quizzes/:quizId/questions', element: <QuestionBankPage /> },
-    { path: '/admin/follow-up', element: <AdminFollowUpPage /> },
-    { path: '/quizzes/:quizId/attempt', element: <QuizAttemptPage /> },
-    { path: '/invite/:token', element: <InvitationPage /> },
-    { path: '*', element: <NotFound /> },
+  { path: '/login', element: <LoginPage /> },
+  { path: '/register', element: <RegisterPage /> },
+  {
+    path: '/',
+    element: (
+      <RequireAuth>
+        <RequireRole role="STUDENT">
+          <DashboardPage />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/quizzes/:quizId',
+    element: (
+      <RequireAuth>
+        <RequireRole role="STUDENT">
+          <QuizGatewayPage />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/quizzes/:quizId/attempt',
+    element: (
+      <RequireAuth>
+        <RequireRole role="STUDENT">
+          <QuizAttemptPage />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/admin',
+    element: (
+      <RequireAuth>
+        <RequireRole role="ADMIN">
+          <Navigate to="/admin/quizzes" replace />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/admin/quizzes',
+    element: (
+      <RequireAuth>
+        <RequireRole role="ADMIN">
+          <AdminQuizzesListPage />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/admin/quizzes/:quizId/questions',
+    element: (
+      <RequireAuth>
+        <RequireRole role="ADMIN">
+          <QuestionBankPage />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/admin/follow-up',
+    element: (
+      <RequireAuth>
+        <RequireRole role="ADMIN">
+          <AdminFollowUpPage />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/invite/:token',
+    element: <InvitationPage />,
+  },
+  { path: '*', element: <NotFound /> },
 ]);

@@ -5,6 +5,12 @@ const NAV = [
   { to: '/admin/follow-up', label: 'Follow-up', match: (path) => path.startsWith('/admin/follow-up') },
 ];
 
+function logout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('role');
+  window.location.href = '/login';
+}
+
 export default function AdminShell({ title, subtitle, actions, children }) {
   const { pathname } = useLocation();
 
@@ -33,12 +39,18 @@ export default function AdminShell({ title, subtitle, actions, children }) {
                   </Link>
                 );
               })}
-              <Link to="/" className="text-muted hover:text-heading">
-                Student view
-              </Link>
             </nav>
           </div>
-          {actions}
+          <div className="flex items-center gap-3">
+            {actions}
+            <button
+              type="button"
+              onClick={logout}
+              className="text-muted hover:text-heading text-sm font-medium"
+            >
+              Log out
+            </button>
+          </div>
         </div>
       </header>
 

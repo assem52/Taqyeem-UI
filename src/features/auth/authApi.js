@@ -9,7 +9,36 @@ export const authApi = baseApi.injectEndpoints({
         body: credentials,
       }),
     }),
+    register: builder.mutation({
+      query: (body) => ({
+        url: '/auth/register',
+        method: 'POST',
+        body,
+      }),
+    }),
+    verifyEmail: builder.mutation({
+      query: (body) => ({
+        url: '/auth/verify',
+        method: 'POST',
+        body,
+      }),
+    }),
+    getMe: builder.query({
+      query: () => '/auth/me',
+    }),
+    acceptInvitation: builder.mutation({
+      query: (token) => ({
+        url: `/student/invitations/${token}/accept`,
+        method: 'POST',
+      }),
+    }),
   }),
 });
 
-export const { useLoginMutation } = authApi;
+export const {
+  useLoginMutation,
+  useRegisterMutation,
+  useVerifyEmailMutation,
+  useGetMeQuery,
+  useAcceptInvitationMutation,
+} = authApi;
