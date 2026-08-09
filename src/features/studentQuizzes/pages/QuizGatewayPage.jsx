@@ -6,7 +6,7 @@ import AccessDenied from '../../../shared/components/AccessDenied';
 import QuizClosed from '../../../shared/components/QuizClosed';
 import { isClosedReason } from '../../../shared/utils/isClosedReason';
 import MessagePage from '../../../shared/components/MessagePage';
-import AppHeader from '../../../shared/components/AppHeader';
+import AppShell from '../../../shared/components/AppShell';
 import { Clock, Calendar, HelpCircle, Loader2, ChevronLeft } from '../../../shared/components/Icons';
 
 export default function QuizGatewayPage() {
@@ -27,15 +27,14 @@ export default function QuizGatewayPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <AppHeader />
-        <main className="flex-1 flex items-center justify-center p-8">
-          <div className="bg-surface border border-border rounded-card p-12 text-center flex flex-col items-center justify-center shadow-soft">
+      <AppShell variant="student">
+        <div className="flex justify-center py-16">
+          <div className="border-border bg-surface flex flex-col items-center rounded-card border p-12 text-center shadow-soft">
             <Loader2 size={36} className="text-primary mb-3" />
-            <p className="text-sm font-medium text-heading">Loading quiz details…</p>
+            <p className="text-heading text-sm font-medium">Loading quiz details…</p>
           </div>
-        </main>
-      </div>
+        </div>
+      </AppShell>
     );
   }
 
@@ -90,20 +89,17 @@ export default function QuizGatewayPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <AppHeader />
-
-      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+    <AppShell variant="student">
         <div className="mx-auto max-w-3xl">
           <Link 
             to="/" 
-            className="inline-flex items-center text-sm font-medium text-muted hover:text-heading mb-6 transition-colors"
+            className="text-muted hover:text-heading mb-6 inline-flex items-center text-sm font-medium transition-colors"
           >
             <ChevronLeft size={16} className="mr-1" />
-            Back to dashboard
+            Back to quizzes
           </Link>
 
-          <div className="bg-surface border border-border rounded-card p-6 sm:p-8 shadow-soft">
+          <div className="border-border bg-surface rounded-card border p-6 shadow-soft sm:p-8">
             {/* Title & Status Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-border mb-6">
               <div>
@@ -135,8 +131,11 @@ export default function QuizGatewayPage() {
                     <HelpCircle size={20} />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-muted uppercase tracking-wider">Current Score</p>
-                    <p className="text-sm font-medium text-heading">{quiz.score}</p>
+                    <p className="text-xs font-semibold text-muted uppercase tracking-wider">Score</p>
+                    <p className="text-sm font-medium text-heading">
+                      {quiz.score}%
+                      {quiz.passed === true ? ' · Passed' : quiz.passed === false ? ' · Not yet' : ''}
+                    </p>
                   </div>
                 </div>
               )}
@@ -169,7 +168,7 @@ export default function QuizGatewayPage() {
             {/* Instructions Container */}
             <div className="bg-background rounded-lg border border-border p-5 mb-8">
               <h2 className="text-base font-bold text-heading mb-3">
-                Rules & Guidelines
+                Before you start
               </h2>
               {quiz.instructions ? (
                 <div className="text-sm text-body whitespace-pre-wrap leading-relaxed">
@@ -177,13 +176,17 @@ export default function QuizGatewayPage() {
                 </div>
               ) : (
                 <ul className="list-disc list-inside space-y-2 text-sm text-muted leading-relaxed">
-                  <li>Read every question carefully before selecting an answer.</li>
-                  <li>Once you start, your timed attempt begins immediately.</li>
-                  <li>Ensure you have a stable internet connection before starting.</li>
-                  <li>Do not refresh or navigate away from the page while solving.</li>
-                  <li>Closing the browser may automatically submit your current progress.</li>
+                  <li>Your timed attempt starts when you begin — watch the countdown.</li>
+                  <li>Answers save automatically as you go.</li>
+                  <li>You get one attempt. When time ends, we submit what you have.</li>
+                  <li>Stay on this page while you work.</li>
                 </ul>
               )}
+              {quiz.durationMinutes != null ? (
+                <p className="mt-3 text-sm text-muted">
+                  You have up to {quiz.durationMinutes} minutes, or until the quiz closes — whichever comes first.
+                </p>
+              ) : null}
             </div>
 
             {/* Error Notification */}
@@ -209,8 +212,21 @@ export default function QuizGatewayPage() {
                   className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-button text-sm font-medium transition-all duration-200 ease-out bg-primary text-surface hover:bg-primary-hover shadow-soft px-8 py-2.5 disabled:opacity-50"
                 >
                   {isStarting && <Loader2 size={16} className="mr-2" />}
-                  {isStarting ? 'Starting Quiz…' : 'Begin Assessment'}
+                  {isStarting
+                    ? quiz.studentState === 'In progress'
+                      ? 'Continuing…'
+                      : 'Starting…'
+                    : quiz.studentState === 'In progress'
+                      ? 'Continue quiz'
+                      : 'Start quiz'}
                 </button>
+              ) : quiz.studentState === 'Submitted' ? (
+                <Link
+                  to={`/quizzes/${quiz.quizId}/results`}
+                  className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-button text-sm font-medium transition-all duration-200 ease-out bg-primary text-surface hover:bg-primary-hover shadow-soft px-8 py-2.5"
+                >
+                  View results
+                </Link>
               ) : (
                 <div className="w-full sm:w-auto rounded-button border border-warning/20 bg-warning/10 px-4 py-2.5 text-center text-sm font-medium text-warning">
                   {quiz.blockedReason}
@@ -219,7 +235,6 @@ export default function QuizGatewayPage() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

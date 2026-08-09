@@ -11,6 +11,10 @@ export const studentQuizzesApi = baseApi.injectEndpoints({
             query: (quizId) => `/student/quizzes/${quizId}`,
             providesTags: (result, error, quizId) => [{ type: 'StudentQuiz', id: quizId }],
         }),
+        getQuizResults: build.query({
+            query: (quizId) => `/student/quizzes/${quizId}/results`,
+            providesTags: (result, error, quizId) => [{ type: 'QuizResults', id: quizId }],
+        }),
         getInvitation: build.query({
             query: (token) => `/student/invitations/${token}`,
         }),
@@ -31,10 +35,13 @@ export const studentQuizzesApi = baseApi.injectEndpoints({
             providesTags: (result, error, quizId) => [{ type: 'Attempt', id: quizId }],
         }),
         saveAnswer: build.mutation({
-            query: ({ attemptId, questionId, selectedOptionId }) => ({
+            query: ({ attemptId, questionId, selectedOptionId, textAnswer }) => ({
                 url: `/attempts/${attemptId}/answers/${questionId}`,
                 method: 'PUT',
-                body: { selectedOptionId },
+                body: {
+                    selectedOptionId: selectedOptionId ?? null,
+                    textAnswer: textAnswer ?? null,
+                },
             }),
         }),
         submitAttempt: build.mutation({
@@ -42,17 +49,25 @@ export const studentQuizzesApi = baseApi.injectEndpoints({
                 url: `/attempts/${attemptId}/submit`,
                 method: 'POST',
             }),
-            invalidatesTags: ['StudentQuizzes', 'StudentQuiz', 'Attempt'],
+            invalidatesTags: ['StudentQuizzes', 'StudentQuiz', 'Attempt', 'QuizResults'],
+        }),
+        recordVisibilityLost: build.mutation({
+            query: (attemptId) => ({
+                url: `/attempts/${attemptId}/integrity-events/visibility-lost`,
+                method: 'POST',
+            }),
         }),
     }),
 })
 
 export const { 
     useGetStudentQuizzesQuery, 
-    useGetStudentQuizQuery, 
+    useGetStudentQuizQuery,
+    useGetQuizResultsQuery,
     useGetInvitationQuery,
     useStartAttemptMutation,
     useGetAttemptQuery,
     useSaveAnswerMutation,
-    useSubmitAttemptMutation
-} = studentQuizzesApi;
+    useSubmitAttemptMutation,
+    useRecordVisibilityLostMutation,
+} = studentQuizzesApi;

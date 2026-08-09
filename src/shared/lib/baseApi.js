@@ -1,19 +1,26 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+const apiBase = import.meta.env.VITE_API_BASE_URL;
+if (!apiBase && import.meta.env.PROD) {
+  throw new Error(
+    'VITE_API_BASE_URL must be set for production builds of Taqyem.',
+  );
+}
+
 const rawBaseQuery = fetchBaseQuery({
-  baseUrl: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000',
+  baseUrl: apiBase || 'http://localhost:3000',
   prepareHeaders: (headers) => {
     const jwtToken = localStorage.getItem('token');
     if (jwtToken) {
       headers.set('authorization', `Bearer ${jwtToken}`);
     }
 
-    // Dual-mode DEV fallbacks (backend still accepts these).
-    const studentId = import.meta.env.VITE_MOCK_STUDENT_ID;
-    if (studentId) {
-      headers.set('x-student-id', studentId);
-    }
+    // DEV-only mock identity — never applied in production builds.
     if (import.meta.env.DEV) {
+      const studentId = import.meta.env.VITE_MOCK_STUDENT_ID;
+      if (studentId) {
+        headers.set('x-student-id', studentId);
+      }
       const adminToken = import.meta.env.VITE_ADMIN_TOKEN;
       if (adminToken) {
         headers.set('x-admin-token', adminToken);
@@ -33,9 +40,11 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
       : args?.url?.includes('/auth/');
 
   if (result.error && result.error.status === 401 && !isAuthRequest) {
+    const path = `${window.location.pathname}${window.location.search}`;
     localStorage.removeItem('token');
     localStorage.removeItem('role');
-    window.location.href = '/login';
+    const next = encodeURIComponent(path || '/');
+    window.location.href = `/login?next=${next}`;
   }
 
   return result;
@@ -47,11 +56,16 @@ export const baseApi = createApi({
     'StudentQuizzes',
     'StudentQuiz',
     'Attempt',
+    'QuizResults',
     'AdminFollowUp',
     'Quiz',
     'Quizzes',
     'Questions',
     'Invitations',
+    'QuizAnalytics',
+    'QuestionAnalytics',
+    'QuizAttempts',
+    'AttemptReview',
   ],
   baseQuery: baseQueryWithReauth,
   endpoints: () => ({}),

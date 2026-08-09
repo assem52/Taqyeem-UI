@@ -20,6 +20,7 @@ export interface FollowUpLearner {
   studentEmail: string
   quizId: string
   quizTitle: string
+  attemptId?: string | null
   score: number | null
   submittedAt: string | null
   attemptStatus: AttemptStatus | null

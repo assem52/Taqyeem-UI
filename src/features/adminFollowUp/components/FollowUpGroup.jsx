@@ -5,15 +5,16 @@ export default function FollowUpGroup({ group }) {
   const reasonStr = group?.reason ? String(group.reason).toLowerCase() : 'unknown'
   const headingId = `follow-up-${reasonStr}`
   const learnersList = group?.learners ?? []
+  const count = group?.count ?? learnersList.length
 
   return (
-    <section aria-labelledby={headingId}>
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <section aria-labelledby={headingId} className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
         <h2 id={headingId}>
           <FollowUpReasonPill reason={group?.reason} label={group?.label} />
         </h2>
-        <span className="text-sm font-medium text-slate-500">
-          {group?.count ?? learnersList.length} {(group?.count ?? learnersList.length) === 1 ? 'learner' : 'learners'}
+        <span className="text-muted text-sm tabular-nums">
+          {count} {count === 1 ? 'learner' : 'learners'}
         </span>
       </div>
 

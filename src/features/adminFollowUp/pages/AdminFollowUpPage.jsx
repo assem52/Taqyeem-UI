@@ -20,14 +20,13 @@ export default function AdminFollowUpPage() {
 
   return (
     <AdminShell
-      title="Morning follow-up"
-      subtitle="Learners who need an actionable next step across published quizzes."
+      title="Follow-up"
+      subtitle={
+        data
+          ? `Updated ${formatDateTime(data.generatedAt)}. Act on people who need a next step.`
+          : 'Act on people who need a next step across published quizzes.'
+      }
     >
-      {data ? (
-        <p className="text-muted -mt-4 mb-6 text-xs">
-          Generated {formatDateTime(data.generatedAt)}
-        </p>
-      ) : null}
 
       <QuizFilter
         disabled={allFollowUps.isLoading || allFollowUps.isError}

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   useGetAdminQuizzesQuery,
   usePublishQuizMutation,
@@ -8,9 +8,9 @@ import {
 } from '../adminQuizzesApi';
 import QuizDetailModal from '../components/QuizDetailModal';
 import BulkInviteModal from '../components/BulkInviteModal';
-import InvitationTrackerTable from '../components/InvitationTrackerTable';
 import DuplicateQuizButton from '../../questionBank/components/DuplicateQuizButton';
 import AdminShell from '../../../shared/components/AdminShell';
+import { useGetAdminFollowUpQuery } from '../../adminFollowUp/adminFollowUpApi';
 
 function formatWhen(value) {
   if (!value) return '—';
@@ -33,41 +33,42 @@ function statusClass(status) {
 }
 
 export default function AdminQuizzesListPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState(null);
   const [isBulkInviteOpen, setIsBulkInviteOpen] = useState(false);
   const [selectedQuizForInvite, setSelectedQuizForInvite] = useState(null);
-  const [expandedTrackerQuizId, setExpandedTrackerQuizId] = useState(null);
+  const [menuQuizId, setMenuQuizId] = useState('');
   const [actionError, setActionError] = useState('');
 
   const { data: quizzes = [], isLoading, isError, refetch } = useGetAdminQuizzesQuery({
     search: search.trim() || undefined,
     status: statusFilter !== 'ALL' ? statusFilter : undefined,
   });
+  const { data: followUp } = useGetAdminFollowUpQuery();
+
+  const followUpTotal = useMemo(() => {
+    if (!followUp) return null;
+    if (typeof followUp.summary?.total === 'number') return followUp.summary.total;
+    const groups = followUp.groups || [];
+    return groups.reduce((sum, g) => sum + (g.count ?? g.learners?.length ?? 0), 0);
+  }, [followUp]);
 
   const [publishQuiz, { isLoading: isPublishing }] = usePublishQuizMutation();
   const [unpublishQuiz, { isLoading: isUnpublishing }] = useUnpublishQuizMutation();
   const [deleteQuiz, { isLoading: isDeleting }] = useDeleteQuizMutation();
 
-  const handleOpenCreate = () => {
-    setEditingQuiz(null);
-    setIsQuizModalOpen(true);
-  };
-
   const handleOpenEdit = (quiz) => {
     setEditingQuiz(quiz);
     setIsQuizModalOpen(true);
-  };
-
-  const handleOpenBulkInvite = (quiz) => {
-    setSelectedQuizForInvite(quiz);
-    setIsBulkInviteOpen(true);
+    setMenuQuizId('');
   };
 
   const handleTogglePublish = async (quiz) => {
     setActionError('');
+    setMenuQuizId('');
     try {
       if (quiz.status === 'PUBLISHED') {
         await unpublishQuiz(quiz.quizId).unwrap();
@@ -85,6 +86,7 @@ export default function AdminQuizzesListPage() {
   const handleDelete = async (quiz) => {
     if (!window.confirm(`Delete “${quiz.title}”? This cannot be undone.`)) return;
     setActionError('');
+    setMenuQuizId('');
     try {
       await deleteQuiz(quiz.quizId).unwrap();
     } catch (err) {
@@ -94,16 +96,15 @@ export default function AdminQuizzesListPage() {
 
   return (
     <AdminShell
-      title="Quizzes"
-      subtitle="Create assessments, manage questions, publish, and invite students."
+      title="Cohorts"
+      subtitle="Open a workspace to monitor, invite, and prove outcomes."
       actions={
-        <button
-          type="button"
-          onClick={handleOpenCreate}
-          className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white transition"
+        <Link
+          to="/admin/quizzes/launch"
+          className="bg-primary hover:bg-primary-hover rounded-button px-3.5 py-2 text-sm font-semibold text-white transition"
         >
-          New quiz
-        </button>
+          Launch quiz
+        </Link>
       }
     >
       {actionError && (
@@ -118,9 +119,24 @@ export default function AdminQuizzesListPage() {
         </div>
       )}
 
+      {followUpTotal != null && followUpTotal > 0 ? (
+        <div className="border-border bg-primary-soft/60 mb-6 flex flex-wrap items-center justify-between gap-3 rounded-card border px-4 py-3">
+          <p className="text-heading text-sm">
+            <span className="font-semibold tabular-nums">{followUpTotal}</span>
+            {' '}learner{followUpTotal === 1 ? '' : 's'} need a next step today.
+          </p>
+          <Link
+            to="/admin/follow-up"
+            className="text-primary text-sm font-semibold hover:underline"
+          >
+            Open follow-up
+          </Link>
+        </div>
+      ) : null}
+
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <label className="sr-only" htmlFor="quiz-search">
-          Search quizzes
+          Search cohorts
         </label>
         <input
           id="quiz-search"
@@ -132,7 +148,7 @@ export default function AdminQuizzesListPage() {
         />
 
         <div className="border-border bg-surface flex overflow-hidden rounded-input border text-sm" role="group" aria-label="Filter by status">
-          {['ALL', 'DRAFT', 'PUBLISHED', 'ARCHIVED'].map((st) => (
+          {['ALL', 'DRAFT', 'PUBLISHED'].map((st) => (
             <button
               key={st}
               type="button"
@@ -150,7 +166,7 @@ export default function AdminQuizzesListPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-muted py-16 text-center text-sm">Loading quizzes…</p>
+        <p className="text-muted py-16 text-center text-sm">Loading cohorts…</p>
       ) : isError ? (
         <div className="border-border bg-surface rounded-card border px-6 py-10 text-center">
           <p className="text-danger text-sm">Could not load quizzes.</p>
@@ -164,27 +180,26 @@ export default function AdminQuizzesListPage() {
         </div>
       ) : quizzes.length === 0 ? (
         <div className="border-border bg-surface rounded-card border px-6 py-14 text-center">
-          <h2 className="font-display text-heading text-xl">No quizzes yet</h2>
+          <h2 className="font-display text-heading text-xl">No cohorts yet</h2>
           <p className="text-muted mx-auto mt-2 max-w-sm text-sm">
             {search || statusFilter !== 'ALL'
               ? 'Nothing matched your search or filter.'
-              : 'Start by creating a draft quiz, then add questions before publishing.'}
+              : 'Launch your first cohort quiz — guided from basics through invite.'}
           </p>
           {!search && statusFilter === 'ALL' && (
-            <button
-              type="button"
-              onClick={handleOpenCreate}
-              className="bg-primary hover:bg-primary-hover mt-6 rounded-button px-4 py-2.5 text-sm font-semibold text-white"
+            <Link
+              to="/admin/quizzes/launch"
+              className="bg-primary hover:bg-primary-hover mt-6 inline-flex rounded-button px-4 py-2.5 text-sm font-semibold text-white"
             >
-              Create quiz
-            </button>
+              Launch a cohort quiz
+            </Link>
           )}
         </div>
       ) : (
         <ul className="border-border bg-surface divide-border divide-y overflow-hidden rounded-card border">
           {quizzes.map((quiz) => {
-            const isTrackerExpanded = expandedTrackerQuizId === quiz.quizId;
             const questionCount = quiz.questions?.length ?? 0;
+            const menuOpen = menuQuizId === quiz.quizId;
 
             return (
               <li key={quiz.quizId} className="px-5 py-5 sm:px-6">
@@ -220,91 +235,91 @@ export default function AdminQuizzesListPage() {
                     <p className="text-muted mt-1 text-sm">
                       Opens {formatWhen(quiz.openDate)} · Closes {formatWhen(quiz.closesAt)}
                     </p>
-
-                    {!quiz.isValid && quiz.validationErrors?.length > 0 && (
-                      <div className="border-warning/25 bg-warning/5 text-warning mt-4 rounded-button border px-3 py-2 text-sm">
-                        <p className="font-medium">Cannot publish yet</p>
-                        <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs opacity-90">
-                          {quiz.validationErrors.map((err) => (
-                            <li key={err}>{err}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
                   </div>
 
-                  <div className="flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap lg:max-w-xs lg:justify-end">
+                  <div className="relative flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:items-start">
                     <Link
-                      to={`/admin/quizzes/${quiz.quizId}/questions`}
-                      className="bg-primary hover:bg-primary-hover rounded-button px-3.5 py-2 text-center text-sm font-semibold text-white transition"
+                      to={`/admin/quizzes/${quiz.quizId}`}
+                      className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-center text-sm font-semibold text-white transition"
                     >
-                      {quiz.hasAttempts ? 'View questions' : 'Questions'}
+                      Open workspace
+                    </Link>
+                    <Link
+                      to={`/admin/quizzes/${quiz.quizId}?tab=results&view=snapshot`}
+                      className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2.5 text-center text-sm font-medium"
+                    >
+                      Outcomes
                     </Link>
                     <button
                       type="button"
-                      onClick={() => handleTogglePublish(quiz)}
-                      disabled={isPublishing || isUnpublishing}
-                      className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2 text-sm font-medium transition disabled:opacity-50"
+                      onClick={() => setMenuQuizId(menuOpen ? '' : quiz.quizId)}
+                      className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2.5 text-sm font-medium"
+                      aria-expanded={menuOpen}
                     >
-                      {quiz.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+                      More
                     </button>
+                    {menuOpen ? (
+                      <div className="border-border bg-surface absolute top-full right-0 z-20 mt-1 min-w-[12rem] rounded-card border py-1 shadow-soft">
+                        <button
+                          type="button"
+                          className="hover:bg-background block w-full px-3 py-2 text-left text-sm"
+                          onClick={() => handleOpenEdit(quiz)}
+                        >
+                          Edit settings
+                        </button>
+                        <Link
+                          to={`/admin/quizzes/${quiz.quizId}/questions`}
+                          className="hover:bg-background block px-3 py-2 text-sm"
+                          onClick={() => setMenuQuizId('')}
+                        >
+                          Questions
+                        </Link>
+                        <button
+                          type="button"
+                          className="hover:bg-background block w-full px-3 py-2 text-left text-sm disabled:opacity-50"
+                          disabled={
+                            isPublishing ||
+                            isUnpublishing ||
+                            (quiz.status !== 'PUBLISHED' && !quiz.isValid)
+                          }
+                          onClick={() => handleTogglePublish(quiz)}
+                        >
+                          {quiz.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
+                        </button>
+                        <button
+                          type="button"
+                          className="hover:bg-background block w-full px-3 py-2 text-left text-sm"
+                          onClick={() => {
+                            setSelectedQuizForInvite(quiz);
+                            setIsBulkInviteOpen(true);
+                            setMenuQuizId('');
+                          }}
+                        >
+                          Invite students
+                        </button>
+                        <div className="px-3 py-1">
+                          <DuplicateQuizButton
+                            quiz={quiz}
+                            onError={(message) =>
+                              setActionError(message ? `${quiz.title}: ${message}` : '')
+                            }
+                            className="text-body hover:text-heading text-sm font-medium"
+                          >
+                            Duplicate
+                          </DuplicateQuizButton>
+                        </div>
+                        <button
+                          type="button"
+                          className="text-danger hover:bg-background block w-full px-3 py-2 text-left text-sm disabled:opacity-40"
+                          disabled={isDeleting || quiz.hasAttempts}
+                          onClick={() => handleDelete(quiz)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
-
-                <div className="border-border mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-3 text-sm">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenEdit(quiz)}
-                    className="text-body hover:text-heading font-medium"
-                  >
-                    Settings
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenBulkInvite(quiz)}
-                    className="text-body hover:text-heading font-medium"
-                  >
-                    Invite students
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedTrackerQuizId(isTrackerExpanded ? null : quiz.quizId)
-                    }
-                    className="text-body hover:text-heading font-medium"
-                    aria-expanded={isTrackerExpanded}
-                  >
-                    {isTrackerExpanded ? 'Hide invitations' : 'Invitations'}
-                  </button>
-                  <DuplicateQuizButton
-                    quiz={quiz}
-                    onError={(message) =>
-                      setActionError(message ? `${quiz.title}: ${message}` : '')
-                    }
-                    className="text-body hover:text-heading font-medium"
-                  >
-                    {quiz.hasAttempts ? 'Duplicate to edit' : 'Duplicate'}
-                  </DuplicateQuizButton>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(quiz)}
-                    disabled={isDeleting || quiz.hasAttempts}
-                    title={
-                      quiz.hasAttempts
-                        ? 'Cannot delete a quiz with student attempts'
-                        : 'Delete quiz'
-                    }
-                    className="text-danger hover:text-danger ml-auto font-medium disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Delete
-                  </button>
-                </div>
-
-                {isTrackerExpanded && (
-                  <div className="mt-4">
-                    <InvitationTrackerTable quizId={quiz.quizId} quizTitle={quiz.title} />
-                  </div>
-                )}
               </li>
             );
           })}
@@ -315,6 +330,11 @@ export default function AdminQuizzesListPage() {
         isOpen={isQuizModalOpen}
         onClose={() => setIsQuizModalOpen(false)}
         quiz={editingQuiz}
+        onCreated={(created) => {
+          if (created?.quizId) {
+            navigate(`/admin/quizzes/launch?quizId=${created.quizId}&step=questions`);
+          }
+        }}
       />
 
       <BulkInviteModal

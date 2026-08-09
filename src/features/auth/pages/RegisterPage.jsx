@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useRegisterMutation } from '../authApi';
+import AuthShell, {
+  authFieldClass,
+  authLabelClass,
+  authPrimaryBtnClass,
+} from '../components/AuthShell';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -10,6 +15,8 @@ export default function RegisterPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [register, { isLoading }] = useRegisterMutation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const next = searchParams.get('next');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,99 +26,99 @@ export default function RegisterPage() {
     try {
       const result = await register({ name, email, password }).unwrap();
       setSuccessMsg(
-        `${result.message || 'Registered.'} Check the backend console for the DEV verification token, then verify before logging in.`,
+        result.message ||
+          'Registered. Enter your verification code on the next screen.',
       );
-      setTimeout(() => navigate('/login'), 2500);
+      const params = new URLSearchParams({
+        email: email.trim().toLowerCase(),
+      });
+      if (next) params.set('next', next);
+      setTimeout(() => navigate(`/verify?${params.toString()}`), 900);
     } catch (err) {
       setErrorMsg(err?.data?.message || 'Registration failed.');
     }
   };
 
+  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : '/login';
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: '#0f172a',
-      padding: 20,
-      fontFamily: 'Inter, system-ui, sans-serif',
-    }}>
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          width: '100%',
-          maxWidth: 420,
-          background: '#fff',
-          borderRadius: 16,
-          padding: '36px 32px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16,
-        }}
-      >
-        <h2 style={{ margin: 0, color: '#1e293b' }}>Create student account</h2>
-        <p style={{ margin: 0, color: '#64748b', fontSize: 14 }}>
-          This creates a User + linked Student so you can take quizzes after verify + login.
-        </p>
-
-        {errorMsg && (
-          <div style={{ background: '#fef2f2', color: '#991b1b', padding: 10, borderRadius: 8, fontSize: 13 }}>
-            {errorMsg}
-          </div>
-        )}
-        {successMsg && (
-          <div style={{ background: '#ecfdf5', color: '#065f46', padding: 10, borderRadius: 8, fontSize: 13 }}>
-            {successMsg}
-          </div>
-        )}
-
-        <input
-          required
-          placeholder="Full name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={{ padding: 12, borderRadius: 8, border: '1px solid #cbd5e1' }}
-        />
-        <input
-          required
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ padding: 12, borderRadius: 8, border: '1px solid #cbd5e1' }}
-        />
-        <input
-          required
-          type="password"
-          minLength={6}
-          placeholder="Password (min 6)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ padding: 12, borderRadius: 8, border: '1px solid #cbd5e1' }}
-        />
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          style={{
-            padding: 12,
-            border: 'none',
-            borderRadius: 8,
-            background: '#2563eb',
-            color: '#fff',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          {isLoading ? 'Creating…' : 'Register'}
-        </button>
-
-        <p style={{ margin: 0, textAlign: 'center', fontSize: 13, color: '#64748b' }}>
+    <AuthShell
+      title="Create your account"
+      subtitle="Register as a learner to accept invites and take quizzes."
+      footer={
+        <>
           Already have an account?{' '}
-          <Link to="/login" style={{ color: '#2563eb', fontWeight: 600 }}>Sign in</Link>
-        </p>
+          <Link to={loginHref} className="text-primary font-semibold hover:underline">
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      {errorMsg ? (
+        <div
+          role="alert"
+          className="border-danger/20 bg-danger/5 text-danger mb-5 rounded-button border px-3.5 py-2.5 text-sm"
+        >
+          {errorMsg}
+        </div>
+      ) : null}
+      {successMsg ? (
+        <div
+          role="status"
+          className="border-success/20 bg-success/10 text-success mb-5 rounded-button border px-3.5 py-2.5 text-sm"
+        >
+          {successMsg}
+        </div>
+      ) : null}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="reg-name" className={authLabelClass}>
+            Full name
+          </label>
+          <input
+            id="reg-name"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className={authFieldClass}
+            autoComplete="name"
+          />
+        </div>
+        <div>
+          <label htmlFor="reg-email" className={authLabelClass}>
+            Email
+          </label>
+          <input
+            id="reg-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={authFieldClass}
+            autoComplete="email"
+          />
+        </div>
+        <div>
+          <label htmlFor="reg-password" className={authLabelClass}>
+            Password
+          </label>
+          <input
+            id="reg-password"
+            type="password"
+            required
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={authFieldClass}
+            autoComplete="new-password"
+          />
+          <p className="text-muted mt-1.5 text-xs">At least 6 characters.</p>
+        </div>
+        <button type="submit" disabled={isLoading} className={`${authPrimaryBtnClass} mt-2`}>
+          {isLoading ? 'Creating…' : 'Create account'}
+        </button>
       </form>
-    </div>
+    </AuthShell>
   );
 }

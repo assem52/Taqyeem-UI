@@ -97,6 +97,12 @@ export default function BulkInviteModal({ isOpen, onClose, quiz }) {
         </div>
 
         <div className="max-h-[80vh] space-y-5 overflow-y-auto p-5">
+          {quiz.status !== 'PUBLISHED' && (
+            <div className="border-warning/25 bg-warning/5 text-warning rounded-button border px-3 py-2 text-sm">
+              Publish this quiz before inviting students. Draft quizzes are not visible to learners.
+            </div>
+          )}
+
           {errorMsg && (
             <div className="border-danger/20 bg-danger/5 text-danger rounded-button border px-3 py-2 text-sm">
               {errorMsg}
@@ -121,6 +127,7 @@ export default function BulkInviteModal({ isOpen, onClose, quiz }) {
                   rows={6}
                   placeholder="One email per line, or separated by commas"
                   className={`${fieldClass} font-mono`}
+                  disabled={quiz.status !== 'PUBLISHED'}
                 />
               </div>
 
@@ -133,6 +140,7 @@ export default function BulkInviteModal({ isOpen, onClose, quiz }) {
                   type="file"
                   accept=".csv,.txt"
                   onChange={handleFileUpload}
+                  disabled={quiz.status !== 'PUBLISHED'}
                   className="text-muted file:border-border file:bg-background file:text-heading w-full text-sm file:mr-3 file:rounded-button file:border file:px-3 file:py-2 file:text-sm file:font-medium"
                 />
               </div>
@@ -147,7 +155,11 @@ export default function BulkInviteModal({ isOpen, onClose, quiz }) {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading || parsedEmails.length === 0}
+                  disabled={
+                    isLoading ||
+                    parsedEmails.length === 0 ||
+                    quiz.status !== 'PUBLISHED'
+                  }
                   className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
                 >
                   {isLoading
@@ -158,11 +170,14 @@ export default function BulkInviteModal({ isOpen, onClose, quiz }) {
             </form>
           ) : (
             <div className="space-y-5">
+              <p className="text-muted text-sm">
+                Delivery mode: {summaryResult.deliveryMode === 'simulated' ? 'simulated (copy links below)' : 'live'}
+              </p>
               <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-5">
                 {[
                   ['Total', summaryResult.total],
-                  ['Sent', summaryResult.sent],
-                  ['Duplicates', summaryResult.duplicates],
+                  ['Invite sent', summaryResult.sent],
+                  ['Already invited', summaryResult.duplicates],
                   ['Invalid', summaryResult.invalid],
                   ['Failed', summaryResult.failed],
                 ].map(([label, value]) => (
@@ -179,15 +194,36 @@ export default function BulkInviteModal({ isOpen, onClose, quiz }) {
                     <tr>
                       <th className="px-3 py-2.5">Email</th>
                       <th className="px-3 py-2.5">Status</th>
-                      <th className="px-3 py-2.5">Details</th>
+                      <th className="px-3 py-2.5">Invite link</th>
                     </tr>
                   </thead>
                   <tbody className="divide-border divide-y">
                     {summaryResult.results.map((res, i) => (
                       <tr key={`${res.email}-${i}`}>
                         <td className="text-heading px-3 py-2.5 font-mono text-xs">{res.email}</td>
-                        <td className="text-body px-3 py-2.5 text-xs font-medium">{res.status}</td>
-                        <td className="text-muted px-3 py-2.5 text-xs">{res.reason || '—'}</td>
+                        <td className="text-body px-3 py-2.5 text-xs font-medium">
+                          {res.status === 'SENT'
+                            ? 'Invite sent'
+                            : res.status === 'DUPLICATE'
+                              ? 'Already invited'
+                              : res.status === 'FAILED'
+                                ? 'Email not delivered'
+                                : res.status}
+                          {res.reason ? ` — ${res.reason}` : ''}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          {res.inviteUrl ? (
+                            <button
+                              type="button"
+                              className="text-primary text-xs font-semibold"
+                              onClick={() => navigator.clipboard.writeText(res.inviteUrl)}
+                            >
+                              Copy link
+                            </button>
+                          ) : (
+                            <span className="text-muted text-xs">—</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
