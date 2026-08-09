@@ -6,7 +6,7 @@ import AccessDenied from '../../../shared/components/AccessDenied';
 import QuizClosed from '../../../shared/components/QuizClosed';
 import { isClosedReason } from '../../../shared/utils/isClosedReason';
 import MessagePage from '../../../shared/components/MessagePage';
-import AppHeader from '../../../shared/components/AppHeader';
+import AppShell from '../../../shared/components/AppShell';
 import { Clock, Calendar, HelpCircle, Loader2, ChevronLeft } from '../../../shared/components/Icons';
 
 export default function QuizGatewayPage() {
@@ -27,15 +27,14 @@ export default function QuizGatewayPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
-        <AppHeader />
-        <main className="flex-1 flex items-center justify-center p-8">
-          <div className="bg-surface border border-border rounded-card p-12 text-center flex flex-col items-center justify-center shadow-soft">
+      <AppShell variant="student">
+        <div className="flex justify-center py-16">
+          <div className="border-border bg-surface flex flex-col items-center rounded-card border p-12 text-center shadow-soft">
             <Loader2 size={36} className="text-primary mb-3" />
-            <p className="text-sm font-medium text-heading">Loading quiz details…</p>
+            <p className="text-heading text-sm font-medium">Loading quiz details…</p>
           </div>
-        </main>
-      </div>
+        </div>
+      </AppShell>
     );
   }
 
@@ -90,20 +89,17 @@ export default function QuizGatewayPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <AppHeader />
-
-      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+    <AppShell variant="student">
         <div className="mx-auto max-w-3xl">
           <Link 
             to="/" 
-            className="inline-flex items-center text-sm font-medium text-muted hover:text-heading mb-6 transition-colors"
+            className="text-muted hover:text-heading mb-6 inline-flex items-center text-sm font-medium transition-colors"
           >
             <ChevronLeft size={16} className="mr-1" />
-            Back to dashboard
+            Back to quizzes
           </Link>
 
-          <div className="bg-surface border border-border rounded-card p-6 sm:p-8 shadow-soft">
+          <div className="border-border bg-surface rounded-card border p-6 shadow-soft sm:p-8">
             {/* Title & Status Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 border-b border-border mb-6">
               <div>
@@ -239,7 +235,6 @@ export default function QuizGatewayPage() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

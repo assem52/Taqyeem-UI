@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { useGetQuizResultsQuery } from '../studentQuizzesApi';
-import AppHeader from '../../../shared/components/AppHeader';
+import AppShell from '../../../shared/components/AppShell';
 import MessagePage from '../../../shared/components/MessagePage';
 import { CheckCircle2, AlertCircle, Loader2, ChevronLeft } from '../../../shared/components/Icons';
 
@@ -28,15 +28,14 @@ export default function QuizResultsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <AppHeader />
-        <main className="flex flex-1 items-center justify-center p-8">
-          <div className="flex flex-col items-center rounded-card border border-border bg-surface p-12 shadow-soft">
-            <Loader2 size={36} className="mb-3 text-primary" />
-            <p className="text-sm font-medium text-heading">Loading your results…</p>
+      <AppShell variant="student">
+        <div className="flex justify-center py-16">
+          <div className="border-border bg-surface flex flex-col items-center rounded-card border p-12 shadow-soft">
+            <Loader2 size={36} className="text-primary mb-3" />
+            <p className="text-heading text-sm font-medium">Loading your results…</p>
           </div>
-        </main>
-      </div>
+        </div>
+      </AppShell>
     );
   }
 
@@ -69,19 +68,17 @@ export default function QuizResultsPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <AppHeader />
-      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+    <AppShell variant="student">
         <div className="mx-auto max-w-3xl">
           <Link
             to="/"
-            className="mb-6 inline-flex items-center text-sm font-medium text-muted transition-colors hover:text-heading"
+            className="text-muted hover:text-heading mb-6 inline-flex items-center text-sm font-medium transition-colors"
           >
             <ChevronLeft size={16} className="mr-1" />
-            Back to dashboard
+            Back to quizzes
           </Link>
 
-          <div className="rounded-card border border-border bg-surface p-6 shadow-soft sm:p-8">
+          <div className="border-border bg-surface rounded-card border p-6 shadow-soft sm:p-8">
             <div className="mb-6 flex flex-col gap-3 border-b border-border pb-6 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted">
@@ -172,7 +169,6 @@ export default function QuizResultsPage() {
             ) : null}
           </div>
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

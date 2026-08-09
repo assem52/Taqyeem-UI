@@ -17,6 +17,7 @@ import RegisterPage from "../features/auth/pages/RegisterPage";
 import VerifyEmailPage from "../features/auth/pages/VerifyEmailPage";
 import ForgotPasswordPage from "../features/auth/pages/ForgotPasswordPage";
 import ResetPasswordPage from "../features/auth/pages/ResetPasswordPage";
+import ProfilePage from "../features/auth/pages/ProfilePage";
 import MessagePage from "../shared/components/MessagePage";
 import { AlertCircle } from "../shared/components/Icons";
 
@@ -70,6 +71,16 @@ export const router = createBrowserRouter([
       <RequireAuth>
         <RequireRole role="STUDENT">
           <DashboardPage />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/profile',
+    element: (
+      <RequireAuth>
+        <RequireRole role="STUDENT">
+          <ProfilePage variant="student" />
         </RequireRole>
       </RequireAuth>
     ),
@@ -170,6 +181,16 @@ export const router = createBrowserRouter([
       <RequireAuth>
         <RequireRole role="ADMIN">
           <AdminFollowUpPage />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/admin/profile',
+    element: (
+      <RequireAuth>
+        <RequireRole role="ADMIN">
+          <ProfilePage variant="admin" />
         </RequireRole>
       </RequireAuth>
     ),
