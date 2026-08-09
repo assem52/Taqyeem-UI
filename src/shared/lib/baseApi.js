@@ -47,6 +47,7 @@ export const baseApi = createApi({
     'StudentQuizzes',
     'StudentQuiz',
     'Attempt',
+    'QuizResults',
     'AdminFollowUp',
     'Quiz',
     'Quizzes',

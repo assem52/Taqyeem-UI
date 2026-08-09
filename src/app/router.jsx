@@ -6,9 +6,11 @@ import AdminQuizzesListPage from "../features/adminQuizzes/pages/AdminQuizzesLis
 import QuestionBankPage from "../features/questionBank/pages/QuestionBankPage";
 import InvitationPage from "../features/studentQuizzes/pages/InvitationPage";
 import QuizAttemptPage from "../features/studentQuizzes/pages/QuizAttemptPage";
+import QuizResultsPage from "../features/studentQuizzes/pages/QuizResultsPage";
 import NotFound from "../shared/components/NotFound";
 import LoginPage from "../features/auth/pages/LoginPage";
 import RegisterPage from "../features/auth/pages/RegisterPage";
+import VerifyEmailPage from "../features/auth/pages/VerifyEmailPage";
 
 function RequireAuth({ children }) {
   const token = localStorage.getItem('token');
@@ -43,6 +45,7 @@ function RequireRole({ role, children }) {
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
+  { path: '/verify', element: <VerifyEmailPage /> },
   {
     path: '/',
     element: (
@@ -69,6 +72,16 @@ export const router = createBrowserRouter([
       <RequireAuth>
         <RequireRole role="STUDENT">
           <QuizAttemptPage />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/quizzes/:quizId/results',
+    element: (
+      <RequireAuth>
+        <RequireRole role="STUDENT">
+          <QuizResultsPage />
         </RequireRole>
       </RequireAuth>
     ),

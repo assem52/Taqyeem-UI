@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   useGetAdminQuizzesQuery,
   usePublishQuizMutation,
@@ -33,6 +33,7 @@ function statusClass(status) {
 }
 
 export default function AdminQuizzesListPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
@@ -243,7 +244,16 @@ export default function AdminQuizzesListPage() {
                     <button
                       type="button"
                       onClick={() => handleTogglePublish(quiz)}
-                      disabled={isPublishing || isUnpublishing}
+                      disabled={
+                        isPublishing ||
+                        isUnpublishing ||
+                        (quiz.status !== 'PUBLISHED' && !quiz.isValid)
+                      }
+                      title={
+                        quiz.status !== 'PUBLISHED' && !quiz.isValid
+                          ? 'Fix validation issues before publishing'
+                          : undefined
+                      }
                       className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2 text-sm font-medium transition disabled:opacity-50"
                     >
                       {quiz.status === 'PUBLISHED' ? 'Unpublish' : 'Publish'}
@@ -315,6 +325,11 @@ export default function AdminQuizzesListPage() {
         isOpen={isQuizModalOpen}
         onClose={() => setIsQuizModalOpen(false)}
         quiz={editingQuiz}
+        onCreated={(created) => {
+          if (created?.quizId) {
+            navigate(`/admin/quizzes/${created.quizId}/questions`);
+          }
+        }}
       />
 
       <BulkInviteModal

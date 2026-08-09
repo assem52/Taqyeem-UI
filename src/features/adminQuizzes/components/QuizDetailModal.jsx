@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   useCreateQuizMutation,
   useUpdateQuizMutation,
@@ -14,11 +15,14 @@ function buildInitialForm(quiz) {
     return {
       title: quiz.title || '',
       description: quiz.description || '',
+      instructions: quiz.instructions || '',
       duration: quiz.duration ?? 60,
       openDate: quiz.openDate ? quiz.openDate.slice(0, 16) : '',
       closesAt: quiz.closesAt ? quiz.closesAt.slice(0, 16) : '',
       passScore:
         quiz.passScore !== null && quiz.passScore !== undefined ? quiz.passScore : '',
+      integrityThreshold: quiz.integrityThreshold ?? 5,
+      resultsPolicy: quiz.resultsPolicy || 'AFTER_CLOSE',
     };
   }
 
@@ -27,14 +31,18 @@ function buildInitialForm(quiz) {
   return {
     title: '',
     description: '',
+    instructions: '',
     duration: 60,
     openDate: now.toISOString().slice(0, 16),
     closesAt: future.toISOString().slice(0, 16),
     passScore: 70,
+    integrityThreshold: 5,
+    resultsPolicy: 'AFTER_CLOSE',
   };
 }
 
-function QuizDetailForm({ quiz, onClose }) {
+function QuizDetailForm({ quiz, onClose, onCreated }) {
+  const navigate = useNavigate();
   const [createQuiz, { isLoading: isCreating }] = useCreateQuizMutation();
   const [updateQuiz, { isLoading: isUpdating }] = useUpdateQuizMutation();
   const isEdit = Boolean(quiz && quiz.quizId);
@@ -66,26 +74,44 @@ function QuizDetailForm({ quiz, onClose }) {
     const payload = {
       title: formData.title.trim(),
       description: formData.description.trim() || undefined,
+      instructions: formData.instructions.trim() || undefined,
       duration: Number(formData.duration) || 60,
       openDate: new Date(formData.openDate).toISOString(),
       closesAt: new Date(formData.closesAt).toISOString(),
       passScore: formData.passScore !== '' ? Number(formData.passScore) : null,
+      integrityThreshold: Number(formData.integrityThreshold) || 5,
+      resultsPolicy: formData.resultsPolicy || 'AFTER_CLOSE',
     };
 
     try {
       if (isEdit) {
+        const softPayload = {
+          id: quiz.quizId,
+          title: payload.title,
+          description: payload.description,
+          instructions: payload.instructions,
+          integrityThreshold: payload.integrityThreshold,
+          resultsPolicy: payload.resultsPolicy,
+        };
         const editPayload = quiz.hasAttempts
-          ? { id: quiz.quizId, title: payload.title, description: payload.description }
+          ? softPayload
           : { id: quiz.quizId, ...payload };
         await updateQuiz(editPayload).unwrap();
+        onClose();
       } else {
-        await createQuiz(payload).unwrap();
+        const created = await createQuiz(payload).unwrap();
+        onClose();
+        if (onCreated) onCreated(created);
+        else if (created?.quizId) {
+          navigate(`/admin/quizzes/${created.quizId}/questions`);
+        }
       }
-      onClose();
     } catch (err) {
       setErrorMsg(err?.data?.message || 'Failed to save quiz. Please try again.');
     }
   };
+
+  const structureLocked = isEdit && quiz?.hasAttempts;
 
   return (
     <form onSubmit={handleSubmit} className="max-h-[80vh] space-y-4 overflow-y-auto p-5">
@@ -95,10 +121,10 @@ function QuizDetailForm({ quiz, onClose }) {
         </div>
       )}
 
-      {isEdit && quiz?.hasAttempts && (
+      {structureLocked && (
         <div className="border-warning/25 bg-warning/5 text-warning rounded-button border px-3 py-2 text-sm">
-          Attempts already exist, so only the title and description can be changed. Duplicate the
-          quiz to edit structure.
+          Attempts already exist, so timing and scoring structure stay locked. You can still edit
+          title, description, instructions, integrity threshold, and results policy.
         </div>
       )}
 
@@ -126,8 +152,23 @@ function QuizDetailForm({ quiz, onClose }) {
           name="description"
           value={formData.description}
           onChange={handleChange}
+          rows={2}
+          className={fieldClass}
+        />
+      </div>
+
+      <div>
+        <label htmlFor="quiz-instructions" className={labelClass}>
+          Instructions (shown before start)
+        </label>
+        <textarea
+          id="quiz-instructions"
+          name="instructions"
+          value={formData.instructions}
+          onChange={handleChange}
           rows={3}
           className={fieldClass}
+          placeholder="What learners should know before they begin…"
         />
       </div>
 
@@ -143,7 +184,7 @@ function QuizDetailForm({ quiz, onClose }) {
             value={formData.duration}
             onChange={handleChange}
             min={1}
-            disabled={isEdit && quiz?.hasAttempts}
+            disabled={structureLocked}
             className={fieldClass}
             required
           />
@@ -160,7 +201,7 @@ function QuizDetailForm({ quiz, onClose }) {
             onChange={handleChange}
             min={0}
             max={100}
-            disabled={isEdit && quiz?.hasAttempts}
+            disabled={structureLocked}
             className={fieldClass}
           />
         </div>
@@ -177,10 +218,11 @@ function QuizDetailForm({ quiz, onClose }) {
             name="openDate"
             value={formData.openDate}
             onChange={handleChange}
-            disabled={isEdit && quiz?.hasAttempts}
+            disabled={structureLocked}
             className={fieldClass}
             required
           />
+          <p className="text-muted mt-1 text-xs">Window controls when a learner may start.</p>
         </div>
         <div>
           <label htmlFor="quiz-close" className={labelClass}>
@@ -192,10 +234,45 @@ function QuizDetailForm({ quiz, onClose }) {
             name="closesAt"
             value={formData.closesAt}
             onChange={handleChange}
-            disabled={isEdit && quiz?.hasAttempts}
+            disabled={structureLocked}
             className={fieldClass}
             required
           />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="quiz-integrity" className={labelClass}>
+            Integrity review threshold
+          </label>
+          <input
+            id="quiz-integrity"
+            type="number"
+            name="integrityThreshold"
+            value={formData.integrityThreshold}
+            onChange={handleChange}
+            min={1}
+            max={100}
+            className={fieldClass}
+          />
+          <p className="text-muted mt-1 text-xs">Tab-away events at or above this need review.</p>
+        </div>
+        <div>
+          <label htmlFor="quiz-results-policy" className={labelClass}>
+            Results policy
+          </label>
+          <select
+            id="quiz-results-policy"
+            name="resultsPolicy"
+            value={formData.resultsPolicy}
+            onChange={handleChange}
+            className={fieldClass}
+          >
+            <option value="AFTER_CLOSE">Score now, review after close</option>
+            <option value="IMMEDIATE">Score + review right after submit</option>
+            <option value="ADMIN_ONLY">Score only (no learner review)</option>
+          </select>
         </div>
       </div>
 
@@ -212,14 +289,18 @@ function QuizDetailForm({ quiz, onClose }) {
           disabled={isCreating || isUpdating}
           className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
         >
-          {isCreating || isUpdating ? 'Saving…' : isEdit ? 'Save' : 'Create'}
+          {isCreating || isUpdating
+            ? 'Saving…'
+            : isEdit
+              ? 'Save'
+              : 'Create & add questions'}
         </button>
       </div>
     </form>
   );
 }
 
-export default function QuizDetailModal({ isOpen, onClose, quiz = null }) {
+export default function QuizDetailModal({ isOpen, onClose, quiz = null, onCreated }) {
   if (!isOpen) return null;
 
   return (
@@ -246,6 +327,7 @@ export default function QuizDetailModal({ isOpen, onClose, quiz = null }) {
           key={quiz?.quizId ?? 'new'}
           quiz={quiz}
           onClose={onClose}
+          onCreated={onCreated}
         />
       </div>
     </div>
