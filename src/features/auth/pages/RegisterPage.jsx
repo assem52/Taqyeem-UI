@@ -18,10 +18,10 @@ export default function RegisterPage() {
 
     try {
       const result = await register({ name, email, password }).unwrap();
-      setSuccessMsg(
-        `${result.message || 'Registered.'} Check the backend console for the DEV verification token, then verify before logging in.`,
-      );
-      setTimeout(() => navigate('/login'), 2500);
+      const targetEmail = result.email || email.trim().toLowerCase();
+      navigate('/verify-email', {
+        state: { email: targetEmail, isJustRegistered: true },
+      });
     } catch (err) {
       setErrorMsg(err?.data?.message || 'Registration failed.');
     }

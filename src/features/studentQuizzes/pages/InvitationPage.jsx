@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGetInvitationQuery } from '../studentQuizzesApi';
 import { useAcceptInvitationMutation } from '../../auth/authApi';
@@ -7,12 +7,14 @@ import QuizClosed from '../../../shared/components/QuizClosed';
 import { isClosedReason } from '../../../shared/utils/isClosedReason';
 import MessagePage from '../../../shared/components/MessagePage';
 import AppHeader from '../../../shared/components/AppHeader';
-import { Loader2 } from '../../../shared/components/Icons';
+import { Loader2, Lock } from '../../../shared/components/Icons';
 
 export default function InvitationPage() {
     const { token } = useParams();
     const navigate = useNavigate();
     const acceptedRef = useRef(false);
+    const [acceptError, setAcceptError] = useState(null);
+
     const { data, isLoading, isError, error } = useGetInvitationQuery(token);
     const [acceptInvitation] = useAcceptInvitationMutation();
 
@@ -22,20 +24,33 @@ export default function InvitationPage() {
         const run = async () => {
             const authToken = localStorage.getItem('token');
             const role = localStorage.getItem('role');
+            const status = localStorage.getItem('status');
 
-            // Must be logged in as a student to create Enrollment from the invite.
+            // Must be logged in as a student to accept invitation and create Enrollment
             if (!authToken || role !== 'STUDENT') {
                 navigate(`/login?next=/invite/${token}`, { replace: true });
                 return;
             }
 
+            // Unverified students must verify email first
+            if (status === 'UNVERIFIED') {
+                navigate('/verify-email', { replace: true });
+                return;
+            }
+
             acceptedRef.current = true;
+
             try {
                 await acceptInvitation(token).unwrap();
-            } catch {
-                // Still send them to the quiz gateway; access check will explain denial.
+                navigate(`/quizzes/${data.quizId}`, { replace: true });
+            } catch (err) {
+                if (err?.status === 403) {
+                    setAcceptError(err?.data?.message || 'This invitation was sent to a different email address.');
+                } else {
+                    // Navigate anyway if already enrolled
+                    navigate(`/quizzes/${data.quizId}`, { replace: true });
+                }
             }
-            navigate(`/quizzes/${data.quizId}`, { replace: true });
         };
 
         run();
@@ -53,6 +68,18 @@ export default function InvitationPage() {
                     </div>
                 </main>
             </div>
+        );
+    }
+
+    if (acceptError) {
+        return (
+            <MessagePage 
+                icon={Lock}
+                title="Invitation Restricted"
+                description={acceptError}
+                buttonText="Go to Dashboard"
+                buttonLink="/"
+            />
         );
     }
 

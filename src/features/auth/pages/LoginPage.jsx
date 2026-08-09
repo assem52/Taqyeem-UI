@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { useLoginMutation } from '../authApi';
+import { setAuthSession } from '../../../shared/utils/authSession';
 
 function homeForRole(role) {
   return role === 'ADMIN' ? '/admin/quizzes' : '/';
@@ -26,6 +28,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  const dispatch = useDispatch();
   const [login, { isLoading }] = useLoginMutation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -34,8 +37,13 @@ export default function LoginPage() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
+    const status = localStorage.getItem('status');
     if (token && role) {
-      navigate(homeForRole(role), { replace: true });
+      if (role === 'STUDENT' && status === 'UNVERIFIED') {
+        navigate('/verify-email', { replace: true });
+      } else {
+        navigate(homeForRole(role), { replace: true });
+      }
     }
   }, [navigate]);
 
@@ -55,8 +63,26 @@ export default function LoginPage() {
       }
 
       const role = response.role ?? response.user?.role ?? 'STUDENT';
-      localStorage.setItem('token', response.access_token);
-      localStorage.setItem('role', role);
+      const status = response.status ?? response.user?.status ?? 'VERIFIED';
+      const userEmail = response.user?.email ?? response.email ?? email.trim().toLowerCase();
+      const userName = response.user?.name ?? response.name ?? '';
+
+      // Cleanly replace auth session and reset RTK query cache for new user
+      setAuthSession(
+        {
+          token: response.access_token,
+          role,
+          status,
+          email: userEmail,
+          name: userName,
+        },
+        dispatch
+      );
+
+      if (role === 'STUDENT' && status === 'UNVERIFIED') {
+        navigate('/verify-email', { replace: true });
+        return;
+      }
 
       navigate(destinationForLogin(role, next), { replace: true });
     } catch (err) {

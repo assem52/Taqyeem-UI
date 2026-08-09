@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import QuizzesList from '../components/QuizzesList';
 import AppHeader from '../../../shared/components/AppHeader';
 
 export default function DashboardPage() {
+  const [searchTerm, setSearchTerm] = useState('');
+
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <AppHeader />
+    <div className="min-h-screen bg-background flex flex-col font-sans">
+      <AppHeader searchTerm={searchTerm} onSearchChange={setSearchTerm} />
 
       <header className="bg-surface border-border border-b px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
@@ -17,7 +20,7 @@ export default function DashboardPage() {
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-7xl">
-          <QuizzesList />
+          <QuizzesList searchTerm={searchTerm} onSearchChange={setSearchTerm} />
         </div>
       </main>
     </div>

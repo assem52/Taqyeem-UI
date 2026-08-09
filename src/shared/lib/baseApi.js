@@ -35,6 +35,8 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
   if (result.error && result.error.status === 401 && !isAuthRequest) {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
+    localStorage.removeItem('status');
+    localStorage.removeItem('email');
     window.location.href = '/login';
   }
 

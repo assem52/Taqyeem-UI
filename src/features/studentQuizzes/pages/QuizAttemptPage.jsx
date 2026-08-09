@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useGetAttemptQuery, useGetStudentQuizQuery, useSaveAnswerMutation, useSubmitAttemptMutation } from '../studentQuizzesApi';
 import MessagePage from '../../../shared/components/MessagePage';
 import { 
@@ -9,11 +9,14 @@ import {
   Save, 
   CheckCircle2, 
   AlertCircle, 
-  Loader2 
+  Loader2,
+  Clock 
 } from '../../../shared/components/Icons';
 
 export default function QuizAttemptPage() {
     const { quizId } = useParams();
+    const navigate = useNavigate();
+
     const { data: attempt, isLoading, isError } = useGetAttemptQuery(quizId);
     const { data: quiz } = useGetStudentQuizQuery(quizId);
     const [saveAnswerMutation] = useSaveAnswerMutation();
@@ -24,12 +27,21 @@ export default function QuizAttemptPage() {
     const [saveStatus, setSaveStatus] = useState('');
     const [isRestored, setIsRestored] = useState(false);
     const [isSubmittedSuccessfully, setIsSubmittedSuccessfully] = useState(false);
+    const [submissionScore, setSubmissionScore] = useState(null);
     const [isFlushing, setIsFlushing] = useState(false);
+
+    // Timer & Navigation Confirmation states
+    const [secondsRemaining, setSecondsRemaining] = useState(null);
+    const [isTimeUp, setIsTimeUp] = useState(false);
+    const [showLeaveModal, setShowLeaveModal] = useState(false);
+    const [showUnansweredModal, setShowUnansweredModal] = useState(false);
 
     const debounceTimers = useRef({});
     const pendingAnswers = useRef({});
     const inFlightSaves = useRef({});
     const isMounted = useRef(true);
+    const hasAutoSubmittedRef = useRef(false);
+    const secondsRemainingRef = useRef(null);
     const attemptIdRef = useRef(attempt?.id);
 
     useEffect(() => {
@@ -90,6 +102,8 @@ export default function QuizAttemptPage() {
     }, [saveAnswerMutation, safeSetSaveStatus]);
 
     const triggerSave = useCallback((questionId, value) => {
+        if (isTimeUp) return;
+
         pendingAnswers.current[questionId] = value;
 
         if (debounceTimers.current[questionId]) {
@@ -107,7 +121,7 @@ export default function QuizAttemptPage() {
                 await performSave(questionId, val);
             }
         }, 500);
-    }, [performSave, safeSetSaveStatus]);
+    }, [performSave, safeSetSaveStatus, isTimeUp]);
 
     const flushPendingSaves = useCallback(async () => {
         const promises = [];
@@ -141,6 +155,114 @@ export default function QuizAttemptPage() {
             await Promise.all([...promises, ...inFlightPromises]);
         }
     }, [performSave]);
+
+    const performSubmit = useCallback(async () => {
+        if (isSubmitting || isFlushing) return;
+        const attemptId = attempt?.id;
+        if (!attemptId) return;
+        try {
+            setIsFlushing(true);
+            await flushPendingSaves();
+            const res = await submitAttempt(attemptId).unwrap();
+            if (attemptId) {
+                localStorage.removeItem(`attempt_paused_seconds_${attemptId}`);
+            }
+            if (res) {
+                setSubmissionScore(res.score ?? res);
+            }
+            setIsSubmittedSuccessfully(true);
+        } catch {
+            // isSubmitError will handle rendering the error in the UI
+        } finally {
+            if (isMounted.current) {
+                setIsFlushing(false);
+            }
+        }
+    }, [attempt?.id, isSubmitting, isFlushing, flushPendingSaves, submitAttempt]);
+
+    const durationMins =
+        quiz?.durationMinutes ??
+        quiz?.duration ??
+        attempt?.quiz?.durationMinutes ??
+        attempt?.quiz?.duration ??
+        60;
+
+    // Quiz Countdown Timer Calculation & Automatic Expiration Finalization
+    useEffect(() => {
+        if (!attempt?.startedAt || attempt?.status !== 'IN_PROGRESS' || isSubmittedSuccessfully) {
+            setSecondsRemaining(null);
+            secondsRemainingRef.current = null;
+            return;
+        }
+
+        let initialRemainingSeconds = null;
+        if (attempt?.id) {
+            const savedData = localStorage.getItem(`attempt_paused_seconds_${attempt.id}`);
+            if (savedData) {
+                try {
+                    const parsed = JSON.parse(savedData);
+                    if (typeof parsed.remainingSeconds === 'number' && parsed.remainingSeconds > 0) {
+                        initialRemainingSeconds = parsed.remainingSeconds;
+                    }
+                } catch {
+                    // Ignore parsing error
+                }
+            }
+        }
+
+        let endTime;
+        if (initialRemainingSeconds !== null) {
+            endTime = Date.now() + initialRemainingSeconds * 1000;
+        } else {
+            const startTime = new Date(attempt.startedAt).getTime();
+            endTime = startTime + durationMins * 60 * 1000;
+        }
+
+        const updateTimer = () => {
+            if (!isMounted.current) return;
+            const now = Date.now();
+            const diffSeconds = Math.max(0, Math.floor((endTime - now) / 1000));
+            setSecondsRemaining(diffSeconds);
+            secondsRemainingRef.current = diffSeconds;
+
+            if (diffSeconds <= 0) {
+                setIsTimeUp(true);
+                if (attempt?.id) {
+                    localStorage.removeItem(`attempt_paused_seconds_${attempt.id}`);
+                }
+                if (!hasAutoSubmittedRef.current) {
+                    hasAutoSubmittedRef.current = true;
+                    performSubmit();
+                }
+            }
+        };
+
+        updateTimer();
+        const intervalId = setInterval(updateTimer, 1000);
+
+        return () => {
+            clearInterval(intervalId);
+        };
+    }, [attempt?.id, attempt?.startedAt, attempt?.status, durationMins, isSubmittedSuccessfully, performSubmit]);
+
+    // Unsaved Changes Browser BeforeUnload Guard
+    useEffect(() => {
+        const handleBeforeUnload = (e) => {
+            const hasUnsaved =
+                saveStatus === 'Saving...' ||
+                saveStatus === 'Retrying...' ||
+                Object.keys(pendingAnswers.current).length > 0 ||
+                Object.keys(inFlightSaves.current).length > 0;
+
+            if (hasUnsaved && attempt?.status === 'IN_PROGRESS' && !isSubmittedSuccessfully && !isTimeUp) {
+                e.preventDefault();
+                e.returnValue = 'Any unsaved answer changes will be lost.';
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [saveStatus, attempt?.status, isSubmittedSuccessfully, isTimeUp]);
 
     useEffect(() => {
         if (attempt && !isRestored) {
@@ -196,9 +318,49 @@ export default function QuizAttemptPage() {
         };
     }, [saveAnswerMutation]);
 
+    const handleBackClick = () => {
+        if (isTimeUp || attempt?.status === 'SUBMITTED' || attempt?.status === 'AUTO_SUBMITTED' || isSubmittedSuccessfully) {
+            navigate('/');
+            return;
+        }
+        setShowLeaveModal(true);
+    };
+
+    const handleConfirmLeave = () => {
+        if (attempt?.id && secondsRemainingRef.current != null && secondsRemainingRef.current > 0) {
+            localStorage.setItem(`attempt_paused_seconds_${attempt.id}`, JSON.stringify({
+                remainingSeconds: secondsRemainingRef.current,
+                pausedAt: Date.now(),
+            }));
+        }
+        setShowLeaveModal(false);
+        navigate('/');
+    };
+
+    const totalQuestions = attempt?.questions?.length ?? 0;
+    const answeredCount = Object.values(answers).filter(val => val != null && val !== '').length;
+    const unansweredCount = Math.max(0, totalQuestions - answeredCount);
+
+    const isSubmitDisabled = isSubmitting || isFlushing || isTimeUp || attempt?.status === 'SUBMITTED';
+
+    const handleUserSubmitClick = () => {
+        if (isSubmitDisabled) return;
+
+        if (unansweredCount > 0) {
+            setShowUnansweredModal(true);
+        } else {
+            performSubmit();
+        }
+    };
+
+    const handleConfirmSubmitAnyway = () => {
+        setShowUnansweredModal(false);
+        performSubmit();
+    };
+
     if (isLoading || (attempt && !isRestored)) {
         return (
-            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8">
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center p-8 font-sans">
                 <div className="bg-surface border border-border rounded-card p-12 text-center flex flex-col items-center shadow-soft">
                     <Loader2 size={36} className="text-primary mb-3" />
                     <p className="text-sm font-medium text-heading">Loading attempt…</p>
@@ -208,11 +370,19 @@ export default function QuizAttemptPage() {
     }
 
     if (attempt?.status === 'SUBMITTED' || attempt?.status === 'AUTO_SUBMITTED' || isSubmittedSuccessfully) {
+        const scoreVal = submissionScore ?? attempt?.score;
+        let formattedScore = null;
+        if (typeof scoreVal === 'object' && scoreVal !== null) {
+            formattedScore = `Score: ${scoreVal.rawScore ?? 0} / ${scoreVal.maxScore ?? 0} (${scoreVal.percentage ?? 0}%)`;
+        } else if (scoreVal != null) {
+            formattedScore = `Score: ${scoreVal}%`;
+        }
+
         return (
             <MessagePage 
                 icon={CheckCircle2}
                 title="Submission Successful" 
-                description="Your quiz attempt has been submitted successfully."
+                description={formattedScore ? `Your quiz attempt has been submitted successfully. ${formattedScore}` : "Your quiz attempt has been submitted successfully."}
                 buttonText="Return to Dashboard"
             />
         );
@@ -242,7 +412,6 @@ export default function QuizAttemptPage() {
 
     const questions = attempt.questions;
     const currentQuestion = questions[currentIndex];
-    const totalQuestions = questions.length;
     
     const handleNext = () => {
         if (currentIndex < totalQuestions - 1) {
@@ -257,6 +426,7 @@ export default function QuizAttemptPage() {
     };
 
     const handleOptionSelect = (questionId, optionId) => {
+        if (isTimeUp || isSubmitting || isFlushing) return;
         setAnswers(prev => ({
             ...prev,
             [questionId]: optionId
@@ -265,6 +435,7 @@ export default function QuizAttemptPage() {
     };
 
     const handleTextChange = (questionId, text) => {
+        if (isTimeUp || isSubmitting || isFlushing) return;
         setAnswers(prev => ({
             ...prev,
             [questionId]: text
@@ -272,26 +443,16 @@ export default function QuizAttemptPage() {
         triggerSave(questionId, text);
     };
 
-    const handleSubmit = async () => {
-        if (isSubmitting || isFlushing) return;
-        const attemptId = attempt?.id;
-        if (!attemptId) return;
-        try {
-            setIsFlushing(true);
-            await flushPendingSaves();
-            await submitAttempt(attemptId).unwrap();
-            setIsSubmittedSuccessfully(true);
-        } catch {
-            // isSubmitError will handle rendering the error in the UI
-        } finally {
-            if (isMounted.current) {
-                setIsFlushing(false);
-            }
-        }
+    const progressPercentage = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+
+    const formatTimeRemaining = (totalSeconds) => {
+        if (totalSeconds == null) return '--:--';
+        const mins = Math.floor(totalSeconds / 60);
+        const secs = totalSeconds % 60;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     };
 
-    const answeredCount = Object.values(answers).filter(val => val != null && val !== '').length;
-    const progressPercentage = Math.round((answeredCount / totalQuestions) * 100);
+    const isLowTime = secondsRemaining != null && secondsRemaining > 0 && secondsRemaining <= 300;
 
     const renderQuestionOptions = (question) => {
         const rawOpts = question.options;
@@ -304,11 +465,14 @@ export default function QuizAttemptPage() {
             const optValue = typeof opt === 'string' ? opt : (opt.id || opt.option || opt.value || `opt-${idx}`);
             const optLabel = typeof opt === 'string' ? opt : (opt.option || opt.text || opt.label || opt.id);
             const isSelected = answers[question.id] === optValue;
+            const isDisabled = isTimeUp || isSubmitting || isFlushing;
 
             return (
                 <label 
                     key={optValue} 
-                    className={`flex cursor-pointer items-center gap-4 rounded-button border p-4 transition-all duration-200 ${
+                    className={`flex items-center gap-4 rounded-button border p-4 transition-all duration-200 ${
+                        isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                    } ${
                         isSelected 
                             ? "border-primary bg-primary/5 text-heading font-medium ring-1 ring-primary/30" 
                             : "border-border bg-surface text-body hover:bg-background"
@@ -317,6 +481,7 @@ export default function QuizAttemptPage() {
                     <input 
                         type="radio" 
                         name={`question-${question.id}`} 
+                        disabled={isDisabled}
                         className="h-4 w-4 border-border text-primary focus:ring-primary accent-primary"
                         checked={isSelected}
                         onChange={() => handleOptionSelect(question.id, optValue)}
@@ -329,13 +494,104 @@ export default function QuizAttemptPage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-background font-sans">
+            {/* Confirmation Leave Modal */}
+            {showLeaveModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="leave-modal-title"
+                        className="bg-surface border-border rounded-dialog w-full max-w-md overflow-hidden border p-6 shadow-soft"
+                    >
+                        <div className="flex items-center gap-3 text-warning mb-4">
+                            <AlertCircle size={24} className="text-warning shrink-0" />
+                            <h3 id="leave-modal-title" className="font-display text-heading text-lg font-bold">
+                                Leave Quiz?
+                            </h3>
+                        </div>
+                        <p className="text-body text-sm mb-6 leading-relaxed">
+                            {saveStatus === 'Saving...' || saveStatus === 'Retrying...'
+                                ? 'You have answers currently being saved. Any unsaved answer changes will be lost if you leave right now.'
+                                : 'Are you sure you want to leave the active quiz? Your timer will pause and resume when you return.'}
+                        </p>
+                        <div className="flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowLeaveModal(false)}
+                                className="border-border text-heading hover:bg-background rounded-button border px-4 py-2 text-sm font-medium transition-colors"
+                            >
+                                Stay & Resume
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirmLeave}
+                                className="bg-danger hover:bg-danger/90 text-white rounded-button px-4 py-2 text-sm font-semibold transition-colors shadow-sm"
+                            >
+                                Leave Quiz
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Unanswered Questions Warning Modal */}
+            {showUnansweredModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="unanswered-modal-title"
+                        className="bg-surface border-border rounded-dialog w-full max-w-md overflow-hidden border p-6 shadow-soft"
+                    >
+                        <div className="flex items-center gap-3 text-warning mb-4">
+                            <AlertCircle size={24} className="text-warning shrink-0" />
+                            <h3 id="unanswered-modal-title" className="font-display text-heading text-lg font-bold">
+                                Unanswered Questions
+                            </h3>
+                        </div>
+                        <p className="text-body text-sm mb-2 leading-relaxed font-semibold">
+                            You haven&apos;t answered all questions.
+                        </p>
+                        <p className="text-muted text-sm mb-6 leading-relaxed">
+                            You answered <strong className="text-heading">{answeredCount}</strong> out of <strong className="text-heading">{totalQuestions}</strong> questions. <strong className="text-danger">{unansweredCount}</strong> {unansweredCount === 1 ? 'question is' : 'questions are'} still unanswered. Are you sure you want to submit?
+                        </p>
+                        <div className="flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setShowUnansweredModal(false)}
+                                className="border-border text-heading hover:bg-background rounded-button border px-4 py-2 text-sm font-medium transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleConfirmSubmitAnyway}
+                                className="bg-primary hover:bg-primary-hover text-surface rounded-button px-4 py-2 text-sm font-semibold transition-colors shadow-sm"
+                            >
+                                Submit Anyway
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Sticky Top Bar for Attempt */}
             <header className="sticky top-0 z-40 bg-surface border-b border-border h-16 flex items-center justify-between px-4 sm:px-8 shadow-sm shrink-0">
                 <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={handleBackClick}
+                        className="inline-flex items-center text-xs font-semibold text-muted hover:text-heading border border-border rounded-button px-2.5 py-1.5 hover:bg-background transition-colors"
+                        title={isTimeUp ? "Return to Dashboard" : "Back to Dashboard"}
+                    >
+                        <ChevronLeft size={16} className="mr-1" />
+                        <span className="hidden sm:inline">{isTimeUp ? "Return to Dashboard" : "Dashboard"}</span>
+                    </button>
+
                     <div className="bg-primary h-7 w-7 rounded-md flex items-center justify-center text-white font-bold text-xs shrink-0">
                         QP
                     </div>
-                    <h1 className="font-semibold text-heading text-base hidden sm:block truncate max-w-md">
+                    <h1 className="font-semibold text-heading text-base hidden sm:block truncate max-w-xs sm:max-w-md">
                         {quiz?.title || 'Quiz Attempt'}
                     </h1>
                     <span className="text-xs font-semibold text-muted sm:hidden">
@@ -343,28 +599,43 @@ export default function QuizAttemptPage() {
                     </span>
                 </div>
                 
-                {/* Autosave and Status Indicator */}
-                <div className="flex items-center gap-4 text-sm font-medium">
-                    {saveStatus === 'Saving...' && (
+                {/* Autosave, Timer, and Status Indicators */}
+                <div className="flex items-center gap-3 text-sm font-medium">
+                    {/* Countdown Timer Display */}
+                    {secondsRemaining !== null && attempt?.status === 'IN_PROGRESS' && !isSubmittedSuccessfully && (
+                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold font-mono transition-colors ${
+                            isTimeUp
+                                ? 'bg-danger/10 border-danger/30 text-danger'
+                                : isLowTime
+                                ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400 animate-pulse'
+                                : 'bg-background border-border text-heading'
+                        }`}>
+                            <Clock size={14} className={isLowTime ? 'text-amber-500' : isTimeUp ? 'text-danger' : 'text-muted'} />
+                            <span>{isTimeUp ? '00:00' : formatTimeRemaining(secondsRemaining)}</span>
+                        </div>
+                    )}
+
+                    {/* Autosave Status */}
+                    {!isTimeUp && saveStatus === 'Saving...' && (
                         <span className="inline-flex items-center text-muted text-xs animate-pulse">
                             <Save size={14} className="mr-1.5" />
                             Saving...
                         </span>
                     )}
-                    {saveStatus === 'Saved' && (
+                    {!isTimeUp && saveStatus === 'Saved' && (
                         <span className="inline-flex items-center text-success text-xs font-medium">
                             <CheckCircle2 size={14} className="mr-1.5 text-success" />
                             Saved
                         </span>
                     )}
-                    {(saveStatus === 'Error saving' || saveStatus === 'Retrying...') && (
+                    {!isTimeUp && (saveStatus === 'Error saving' || saveStatus === 'Retrying...') && (
                         <span className="inline-flex items-center text-danger text-xs font-medium">
                             <AlertCircle size={14} className="mr-1.5 text-danger" />
                             {saveStatus}
                         </span>
                     )}
 
-                    <div className="hidden sm:flex items-center gap-1.5 text-success text-xs font-medium bg-success/10 px-2.5 py-1 rounded-full">
+                    <div className="hidden md:flex items-center gap-1.5 text-success text-xs font-medium bg-success/10 px-2.5 py-1 rounded-full">
                         <Wifi size={12} />
                         Connected
                     </div>
@@ -427,9 +698,9 @@ export default function QuizAttemptPage() {
                     </div>
 
                     <button
-                        onClick={handleSubmit}
-                        disabled={isSubmitting || isFlushing}
-                        className="w-full mt-8 inline-flex items-center justify-center whitespace-nowrap rounded-button text-sm font-medium transition-all duration-200 ease-out bg-primary text-surface hover:bg-primary-hover shadow-soft py-2.5 px-4 disabled:opacity-50"
+                        onClick={handleUserSubmitClick}
+                        disabled={isSubmitDisabled}
+                        className="w-full mt-8 inline-flex items-center justify-center whitespace-nowrap rounded-button text-sm font-medium transition-all duration-200 ease-out bg-primary text-surface hover:bg-primary-hover shadow-soft py-2.5 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isSubmitting || isFlushing ? 'Submitting...' : 'Submit Quiz'}
                     </button>
@@ -444,6 +715,38 @@ export default function QuizAttemptPage() {
                 <main className="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center">
                     <div className="w-full max-w-3xl flex flex-col justify-between min-h-[500px]">
                         <div>
+                            {/* Time is Up Warning Banner */}
+                            {isTimeUp && (
+                                <div className="bg-danger/10 border border-danger/30 text-heading rounded-card p-5 sm:p-6 mb-6 shadow-soft flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                    <div className="flex items-start gap-3">
+                                        <AlertCircle size={24} className="text-danger shrink-0 mt-0.5" />
+                                        <div>
+                                            <h4 className="font-bold text-base text-heading">Time is up</h4>
+                                            <p className="text-xs text-muted mt-1 leading-relaxed">
+                                                The quiz time has ended. Your saved answers are being submitted automatically.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate('/')}
+                                            className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-button px-4 py-2.5 text-xs font-bold border border-border bg-surface text-heading hover:bg-background transition-colors shadow-sm"
+                                        >
+                                            Return to Dashboard
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleUserSubmitClick}
+                                            disabled={isSubmitDisabled}
+                                            className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-button px-4 py-2.5 text-xs font-bold bg-success text-surface hover:bg-opacity-90 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isSubmitting || isFlushing ? 'Submitting...' : 'Submit Quiz'}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Mobile Progress Bar Header */}
                             <div className="mb-6 lg:hidden">
                                 <div className="flex items-center justify-between text-xs font-semibold mb-2">
@@ -473,9 +776,12 @@ export default function QuizAttemptPage() {
                                         renderQuestionOptions(currentQuestion)
                                     ) : currentQuestion.type === 'OPEN_ENDED' ? (
                                         <textarea
-                                            className="w-full rounded-input border border-border bg-background p-4 text-sm text-heading shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors"
+                                            disabled={isTimeUp || isSubmitting || isFlushing}
+                                            className={`w-full rounded-input border border-border bg-background p-4 text-sm text-heading shadow-sm focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-colors ${
+                                                isTimeUp || isSubmitting || isFlushing ? 'cursor-not-allowed opacity-60' : ''
+                                            }`}
                                             rows={5}
-                                            placeholder="Type your answer here..."
+                                            placeholder={isTimeUp ? "Time is up. Answering disabled." : "Type your answer here..."}
                                             value={answers[currentQuestion.id] || ''}
                                             onChange={(e) => handleTextChange(currentQuestion.id, e.target.value)}
                                         />
@@ -511,9 +817,9 @@ export default function QuizAttemptPage() {
                             ) : (
                                 <div className="flex flex-col items-end gap-1">
                                     <button
-                                        onClick={handleSubmit}
-                                        disabled={isSubmitting || isFlushing}
-                                        className="inline-flex items-center justify-center whitespace-nowrap rounded-button text-sm font-medium transition-all duration-200 ease-out bg-success text-surface hover:bg-opacity-90 shadow-soft px-6 py-2.5 disabled:opacity-50"
+                                        onClick={handleUserSubmitClick}
+                                        disabled={isSubmitDisabled}
+                                        className="inline-flex items-center justify-center whitespace-nowrap rounded-button text-sm font-medium transition-all duration-200 ease-out bg-success text-surface hover:bg-opacity-90 shadow-soft px-6 py-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {(isSubmitting || isFlushing) && <Loader2 size={16} className="mr-2" />}
                                         {isSubmitting || isFlushing ? 'Submitting...' : 'Submit Quiz'}

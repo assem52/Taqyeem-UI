@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { clearAuthSession } from '../utils/authSession';
 
 const NAV = [
   { to: '/admin/quizzes', label: 'Quizzes', match: (path) => path.startsWith('/admin/quizzes') },
@@ -6,8 +7,7 @@ const NAV = [
 ];
 
 function logout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('role');
+  clearAuthSession();
   window.location.href = '/login';
 }
 
