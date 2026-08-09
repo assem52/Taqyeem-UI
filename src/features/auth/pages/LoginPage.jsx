@@ -1,41 +1,41 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useLoginMutation } from '../authApi';
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useLoginMutation } from "../authApi";
 import AuthShell, {
   authFieldClass,
   authLabelClass,
   authPrimaryBtnClass,
-} from '../components/AuthShell';
+} from "../components/AuthShell";
 
 function homeForRole(role) {
-  return role === 'ADMIN' ? '/admin/quizzes' : '/';
+  return role === "ADMIN" ? "/admin/quizzes" : "/";
 }
 
 function destinationForLogin(role, next) {
-  if (next?.startsWith('/admin')) {
-    return role === 'ADMIN' ? next : homeForRole(role);
+  if (next?.startsWith("/admin")) {
+    return role === "ADMIN" ? next : homeForRole(role);
   }
-  if (next?.startsWith('/invite') || next?.startsWith('/quizzes')) {
-    return role === 'STUDENT' ? next : homeForRole(role);
+  if (next?.startsWith("/invite") || next?.startsWith("/quizzes")) {
+    return role === "STUDENT" ? next : homeForRole(role);
   }
   if (next) return next;
   return homeForRole(role);
 }
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
 
   const [login, { isLoading }] = useLoginMutation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const next = searchParams.get('next');
+  const next = searchParams.get("next");
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const role = localStorage.getItem('role');
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
     if (token && role) {
       navigate(destinationForLogin(role, next), { replace: true });
     }
@@ -43,7 +43,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMsg('');
+    setErrorMsg("");
 
     try {
       const response = await login({
@@ -52,21 +52,23 @@ export default function LoginPage() {
       }).unwrap();
 
       if (!response?.access_token) {
-        setErrorMsg('Login succeeded but no token was returned. Please try again.');
+        setErrorMsg(
+          "Login succeeded but no token was returned. Please try again.",
+        );
         return;
       }
 
-      const role = response.role ?? response.user?.role ?? 'STUDENT';
+      const role = response.role ?? response.user?.role ?? "STUDENT";
       const status = response.status ?? response.user?.status;
-      localStorage.setItem('token', response.access_token);
-      localStorage.setItem('role', role);
-      if (status) localStorage.setItem('status', status);
+      localStorage.setItem("token", response.access_token);
+      localStorage.setItem("role", role);
+      if (status) localStorage.setItem("status", status);
 
-      if (role === 'STUDENT' && status === 'UNVERIFIED') {
+      if (role === "STUDENT" && status === "UNVERIFIED") {
         const params = new URLSearchParams({
           email: email.trim().toLowerCase(),
         });
-        if (next) params.set('next', next);
+        if (next) params.set("next", next);
         navigate(`/verify?${params.toString()}`, { replace: true });
         return;
       }
@@ -74,14 +76,14 @@ export default function LoginPage() {
       navigate(destinationForLogin(role, next), { replace: true });
     } catch (err) {
       setErrorMsg(
-        err?.data?.message || 'Invalid email or password. Please try again.',
+        err?.data?.message || "Invalid email or password. Please try again.",
       );
     }
   };
 
   const registerHref = next
     ? `/register?next=${encodeURIComponent(next)}`
-    : '/register';
+    : "/register";
 
   return (
     <AuthShell
@@ -89,12 +91,18 @@ export default function LoginPage() {
       subtitle="Sign in with your learner or instructor account."
       footer={
         <>
-          No account?{' '}
-          <Link to={registerHref} className="text-primary font-semibold hover:underline">
+          No account?{" "}
+          <Link
+            to={registerHref}
+            className="text-primary font-semibold hover:underline"
+          >
             Register
           </Link>
-          {' · '}
-          <Link to="/forgot-password" className="text-primary font-semibold hover:underline">
+          {" · "}
+          <Link
+            to="/forgot-password"
+            className="text-primary font-semibold hover:underline"
+          >
             Forgot password
           </Link>
         </>
@@ -133,7 +141,7 @@ export default function LoginPage() {
           <div className="relative">
             <input
               id="login-password"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -146,22 +154,30 @@ export default function LoginPage() {
               onClick={() => setShowPassword((v) => !v)}
               className="text-muted hover:text-heading absolute top-1/2 right-3 -translate-y-1/2 text-xs font-semibold"
             >
-              {showPassword ? 'Hide' : 'Show'}
+              {showPassword ? "Hide" : "Show"}
             </button>
           </div>
         </div>
 
-        <button type="submit" disabled={isLoading} className={`${authPrimaryBtnClass} mt-2`}>
-          {isLoading ? 'Signing in…' : 'Sign in'}
+        <button
+          type="submit"
+          disabled={isLoading}
+          className={`${authPrimaryBtnClass} mt-2`}
+        >
+          {isLoading ? "Signing in…" : "Sign in"}
         </button>
       </form>
 
       {import.meta.env.DEV ? (
         <p className="text-muted border-border mt-6 border-t pt-5 text-xs leading-relaxed">
-          Demo · learner{' '}
-          <span className="text-heading font-medium">assem.test@example.com</span> / Student123!
-          {' · '}admin{' '}
-          <span className="text-heading font-medium">admin@example.com</span> / Admin123!
+          <h2>Demo</h2>
+          <h3>Student</h3>
+          <p className="text-heading font-medium">assem.test@example.com</p>{" "}
+          Student123!
+          <br></br>
+          <h3>Admin </h3>{" "}
+          <p className="text-heading font-medium">admin@example.com</p>{" "}
+          Admin123!
         </p>
       ) : null}
     </AuthShell>
