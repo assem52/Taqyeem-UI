@@ -31,12 +31,14 @@ export default function InvitationPage() {
     setStarted(true);
     try {
       await acceptInvitation(token).unwrap();
+      navigate(`/quizzes/${data.quizId}`, { replace: true });
     } catch (err) {
+      setStarted(false);
       setAcceptError(
-        err?.data?.message || 'Could not accept this invitation. You can still try opening the quiz.',
+        err?.data?.message ||
+          'Could not accept this invitation. Sign in with the invited email and try again.',
       );
     }
-    navigate(`/quizzes/${data.quizId}`, { replace: true });
   };
 
   if (isLoading) {
@@ -89,7 +91,7 @@ export default function InvitationPage() {
           <h1 className="mt-2 text-2xl font-bold tracking-tight text-heading">{quizTitle}</h1>
           <p className="mt-3 text-sm leading-relaxed text-muted">
             {needsLogin
-              ? 'Sign in with the invited email to open this quiz.'
+              ? 'Sign in or register with the invited email to open this quiz.'
               : 'Continue to accept this invite and open the quiz.'}
           </p>
           {acceptError ? (
@@ -106,9 +108,18 @@ export default function InvitationPage() {
             {(isAccepting || started) && <Loader2 size={16} className="mr-2" />}
             {needsLogin ? 'Sign in to continue' : 'Continue to quiz'}
           </button>
-          <Link to="/" className="mt-4 inline-block text-sm font-medium text-muted hover:text-heading">
-            Go to dashboard
-          </Link>
+          {needsLogin ? (
+            <Link
+              to={`/register?next=${encodeURIComponent(`/invite/${token}`)}`}
+              className="text-primary mt-4 inline-block text-sm font-semibold hover:underline"
+            >
+              Create learner account
+            </Link>
+          ) : (
+            <Link to="/" className="text-muted hover:text-heading mt-4 inline-block text-sm font-medium">
+              Go to dashboard
+            </Link>
+          )}
         </div>
       </main>
     </div>

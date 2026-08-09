@@ -286,7 +286,15 @@ export default function QuizWorkspacePage() {
                     `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/analytics/quiz/${quizId}/export.csv`,
                     { headers: token ? { Authorization: `Bearer ${token}` } : {} },
                   )
-                    .then((res) => res.blob())
+                    .then(async (res) => {
+                      if (!res.ok) {
+                        const body = await res.json().catch(() => null);
+                        throw new Error(
+                          body?.message || `Export failed (${res.status})`,
+                        );
+                      }
+                      return res.blob();
+                    })
                     .then((blob) => {
                       const url = URL.createObjectURL(blob);
                       const anchor = document.createElement('a');
@@ -295,7 +303,11 @@ export default function QuizWorkspacePage() {
                       anchor.click();
                       URL.revokeObjectURL(url);
                     })
-                    .catch(() => {});
+                    .catch((err) => {
+                      window.alert(
+                        err?.message || 'Could not export CSV. Try again.',
+                      );
+                    });
                 }}
               >
                 Export CSV

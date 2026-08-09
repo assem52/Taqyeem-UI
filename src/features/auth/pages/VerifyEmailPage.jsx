@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useVerifyEmailMutation } from '../authApi';
+import {
+  useResendVerificationMutation,
+  useVerifyEmailMutation,
+} from '../authApi';
 import AuthShell, {
   authFieldClass,
   authLabelClass,
@@ -11,11 +14,14 @@ import { Loader2 } from '../../../shared/components/Icons';
 export default function VerifyEmailPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
+  const next = params.get('next');
   const [email, setEmail] = useState(params.get('email') || '');
   const [token, setToken] = useState(params.get('token') || '');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [verifyEmail, { isLoading }] = useVerifyEmailMutation();
+  const [resendVerification, { isLoading: isResending }] =
+    useResendVerificationMutation();
 
   const canSubmit = useMemo(
     () => email.trim().length > 3 && token.trim().length > 0,
@@ -32,18 +38,45 @@ export default function VerifyEmailPage() {
         token: token.trim(),
       }).unwrap();
       setMessage(result?.message || 'Email verified successfully.');
-      setTimeout(() => navigate('/login'), 1200);
+      localStorage.setItem('status', 'VERIFIED');
+      const loginTarget = next
+        ? `/login?next=${encodeURIComponent(next)}`
+        : '/login';
+      setTimeout(() => navigate(loginTarget), 1000);
     } catch (err) {
       setError(err?.data?.message || 'Verification failed. Check your email and token.');
+    }
+  };
+
+  const handleResend = async () => {
+    setError('');
+    setMessage('');
+    if (!email.trim()) {
+      setError('Enter your email to resend verification.');
+      return;
+    }
+    try {
+      const result = await resendVerification({
+        email: email.trim().toLowerCase(),
+      }).unwrap();
+      setMessage(
+        result?.message ||
+          'If that account needs verification, a new link has been sent.',
+      );
+    } catch (err) {
+      setError(err?.data?.message || 'Could not resend verification.');
     }
   };
 
   return (
     <AuthShell
       title="Verify your email"
-      subtitle="Enter the email and verification token from registration."
+      subtitle="Open the link from your email, or paste the verification token below."
       footer={
-        <Link to="/login" className="text-primary font-semibold hover:underline">
+        <Link
+          to={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}
+          className="text-primary font-semibold hover:underline"
+        >
           Back to sign in
         </Link>
       }
@@ -101,6 +134,15 @@ export default function VerifyEmailPage() {
           {isLoading ? 'Verifying…' : 'Verify email'}
         </button>
       </form>
+
+      <button
+        type="button"
+        onClick={handleResend}
+        disabled={isResending}
+        className="text-primary mt-4 text-sm font-semibold hover:underline disabled:opacity-50"
+      >
+        {isResending ? 'Sending…' : 'Resend verification email'}
+      </button>
     </AuthShell>
   );
 }

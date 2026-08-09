@@ -37,9 +37,9 @@ export default function LoginPage() {
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
     if (token && role) {
-      navigate(homeForRole(role), { replace: true });
+      navigate(destinationForLogin(role, next), { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, next]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,8 +57,20 @@ export default function LoginPage() {
       }
 
       const role = response.role ?? response.user?.role ?? 'STUDENT';
+      const status = response.status ?? response.user?.status;
       localStorage.setItem('token', response.access_token);
       localStorage.setItem('role', role);
+      if (status) localStorage.setItem('status', status);
+
+      if (role === 'STUDENT' && status === 'UNVERIFIED') {
+        const params = new URLSearchParams({
+          email: email.trim().toLowerCase(),
+        });
+        if (next) params.set('next', next);
+        navigate(`/verify?${params.toString()}`, { replace: true });
+        return;
+      }
+
       navigate(destinationForLogin(role, next), { replace: true });
     } catch (err) {
       setErrorMsg(
@@ -67,6 +79,10 @@ export default function LoginPage() {
     }
   };
 
+  const registerHref = next
+    ? `/register?next=${encodeURIComponent(next)}`
+    : '/register';
+
   return (
     <AuthShell
       title="Welcome back"
@@ -74,7 +90,7 @@ export default function LoginPage() {
       footer={
         <>
           No account?{' '}
-          <Link to="/register" className="text-primary font-semibold hover:underline">
+          <Link to={registerHref} className="text-primary font-semibold hover:underline">
             Register
           </Link>
           {' · '}
@@ -139,13 +155,6 @@ export default function LoginPage() {
           {isLoading ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
-
-      <p className="text-muted mt-6 border-border border-t pt-5 text-xs leading-relaxed">
-        Demo · learner{' '}
-        <span className="text-heading font-medium">assem.test@example.com</span> / Student123!
-        · instructor{' '}
-        <span className="text-heading font-medium">admin@example.com</span> / Admin123!
-      </p>
     </AuthShell>
   );
 }

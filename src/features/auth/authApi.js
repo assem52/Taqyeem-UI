@@ -23,6 +23,13 @@ export const authApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+    resendVerification: builder.mutation({
+      query: (body) => ({
+        url: '/auth/resend-verification',
+        method: 'POST',
+        body,
+      }),
+    }),
     forgotPassword: builder.mutation({
       query: (body) => ({
         url: '/auth/forgot-password',
@@ -53,6 +60,7 @@ export const {
   useLoginMutation,
   useRegisterMutation,
   useVerifyEmailMutation,
+  useResendVerificationMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useGetMeQuery,

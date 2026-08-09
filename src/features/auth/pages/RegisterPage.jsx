@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useRegisterMutation } from '../authApi';
 import AuthShell, {
   authFieldClass,
@@ -15,6 +15,8 @@ export default function RegisterPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [register, { isLoading }] = useRegisterMutation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const next = searchParams.get('next');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,16 +27,19 @@ export default function RegisterPage() {
       const result = await register({ name, email, password }).unwrap();
       setSuccessMsg(
         result.message ||
-          'Registered. Verify your email next — use the token from your inbox or the API log in development.',
+          'Registered. Check your email for a verification link (or the API log in simulated mode).',
       );
-      setTimeout(
-        () => navigate(`/verify?email=${encodeURIComponent(email.trim())}`),
-        1200,
-      );
+      const params = new URLSearchParams({
+        email: email.trim().toLowerCase(),
+      });
+      if (next) params.set('next', next);
+      setTimeout(() => navigate(`/verify?${params.toString()}`), 900);
     } catch (err) {
       setErrorMsg(err?.data?.message || 'Registration failed.');
     }
   };
+
+  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : '/login';
 
   return (
     <AuthShell
@@ -43,7 +48,7 @@ export default function RegisterPage() {
       footer={
         <>
           Already have an account?{' '}
-          <Link to="/login" className="text-primary font-semibold hover:underline">
+          <Link to={loginHref} className="text-primary font-semibold hover:underline">
             Sign in
           </Link>
         </>

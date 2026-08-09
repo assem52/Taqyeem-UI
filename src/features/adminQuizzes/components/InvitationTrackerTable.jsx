@@ -9,7 +9,7 @@ const STATUS_LABELS = {
   STARTED: 'Started',
   ACCEPTED: 'Accepted / Enrolled',
   SENT: 'Invite sent',
-  FAILED: 'Invite failed',
+  FAILED: 'Email not delivered',
   NOT_STARTED: 'Not started',
 };
 
@@ -59,8 +59,11 @@ export default function InvitationTrackerTable({ quizId }) {
       const result = await resendInvitation({ quizId, invitationId }).unwrap();
       setResendNote(
         result.status === 'SENT'
-          ? `Resent to ${email}${result.deliveryMode === 'simulated' ? ' (simulated — use Copy link)' : ''}.`
-          : `Resend failed for ${email}. Copy the invite link instead.`,
+          ? `Resent to ${email}.`
+          : result.deliveryMode === 'simulated' ||
+              String(result.reason || '').includes('Simulated')
+            ? `Simulated mode — email not sent to ${email}. Use Copy link.`
+            : `Resend failed for ${email}. Copy the invite link instead.`,
       );
     } catch {
       setResendNote(`Could not resend to ${email}.`);

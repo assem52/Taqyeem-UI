@@ -25,6 +25,7 @@ export default function CohortOutcomesSnapshot({
   highlight = false,
 }) {
   const [copied, setCopied] = useState(false);
+  const [csvError, setCsvError] = useState('');
 
   useEffect(() => {
     if (!highlight) return;
@@ -55,12 +56,19 @@ export default function CohortOutcomesSnapshot({
   }, [quiz, analytics, needsReviewCount]);
 
   const downloadCsv = () => {
+    setCsvError('');
     const token = localStorage.getItem('token');
     const base = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
     fetch(`${base}/analytics/quiz/${quizId}/export.csv`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     })
-      .then((res) => res.blob())
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.message || `Export failed (${res.status})`);
+        }
+        return res.blob();
+      })
       .then((blob) => {
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
@@ -69,7 +77,9 @@ export default function CohortOutcomesSnapshot({
         anchor.click();
         URL.revokeObjectURL(url);
       })
-      .catch(() => {});
+      .catch((err) => {
+        setCsvError(err?.message || 'Could not export CSV. Try again.');
+      });
   };
 
   return (
@@ -115,6 +125,11 @@ export default function CohortOutcomesSnapshot({
           </button>
         </div>
       </div>
+      {csvError ? (
+        <p role="alert" className="text-danger mt-3 text-sm">
+          {csvError}
+        </p>
+      ) : null}
 
       <dl className="border-border mt-6 grid gap-5 border-t pt-6 sm:grid-cols-3">
         {[

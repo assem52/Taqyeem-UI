@@ -206,7 +206,9 @@ export default function BulkInviteModal({ isOpen, onClose, quiz }) {
                             ? 'Invite sent'
                             : res.status === 'DUPLICATE'
                               ? 'Already invited'
-                              : res.status}
+                              : res.status === 'FAILED'
+                                ? 'Email not delivered'
+                                : res.status}
                           {res.reason ? ` — ${res.reason}` : ''}
                         </td>
                         <td className="px-3 py-2.5">
