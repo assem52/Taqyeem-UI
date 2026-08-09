@@ -236,8 +236,14 @@ export default function AdminQuizzesListPage() {
 
                   <div className="flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap lg:max-w-xs lg:justify-end">
                     <Link
-                      to={`/admin/quizzes/${quiz.quizId}/questions`}
+                      to={`/admin/quizzes/${quiz.quizId}`}
                       className="bg-primary hover:bg-primary-hover rounded-button px-3.5 py-2 text-center text-sm font-semibold text-white transition"
+                    >
+                      Open
+                    </Link>
+                    <Link
+                      to={`/admin/quizzes/${quiz.quizId}/questions`}
+                      className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2 text-center text-sm font-medium transition"
                     >
                       {quiz.hasAttempts ? 'View questions' : 'Questions'}
                     </Link>

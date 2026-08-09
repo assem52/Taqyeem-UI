@@ -3,6 +3,8 @@ import DashboardPage from "../features/studentQuizzes/pages/DashboardPage";
 import QuizGatewayPage from "../features/studentQuizzes/pages/QuizGatewayPage";
 import AdminFollowUpPage from "../features/adminFollowUp/pages/AdminFollowUpPage";
 import AdminQuizzesListPage from "../features/adminQuizzes/pages/AdminQuizzesListPage";
+import QuizWorkspacePage from "../features/adminQuizzes/pages/QuizWorkspacePage";
+import AdminAttemptReviewPage from "../features/adminQuizzes/pages/AdminAttemptReviewPage";
 import QuestionBankPage from "../features/questionBank/pages/QuestionBankPage";
 import InvitationPage from "../features/studentQuizzes/pages/InvitationPage";
 import QuizAttemptPage from "../features/studentQuizzes/pages/QuizAttemptPage";
@@ -17,7 +19,6 @@ function RequireAuth({ children }) {
   return token ? children : <Navigate to="/login" replace />;
 }
 
-/** Role gate — keeps students out of /admin and admins off the student home by default. */
 function RequireRole({ role, children }) {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -107,11 +108,31 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: '/admin/quizzes/:quizId',
+    element: (
+      <RequireAuth>
+        <RequireRole role="ADMIN">
+          <QuizWorkspacePage />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
     path: '/admin/quizzes/:quizId/questions',
     element: (
       <RequireAuth>
         <RequireRole role="ADMIN">
           <QuestionBankPage />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/admin/attempts/:attemptId',
+    element: (
+      <RequireAuth>
+        <RequireRole role="ADMIN">
+          <AdminAttemptReviewPage />
         </RequireRole>
       </RequireAuth>
     ),

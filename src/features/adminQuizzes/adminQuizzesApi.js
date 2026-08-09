@@ -75,6 +75,26 @@ export const adminQuizzesApi = baseApi.injectEndpoints({
         { type: 'Invitations', id: quizId },
       ],
     }),
+
+    getQuizAnalytics: build.query({
+      query: (quizId) => `/analytics/quiz/${quizId}`,
+      providesTags: (result, error, quizId) => [{ type: 'QuizAnalytics', id: quizId }],
+    }),
+
+    getQuestionAnalytics: build.query({
+      query: (quizId) => `/question-analytics/quiz/${quizId}`,
+      providesTags: (result, error, quizId) => [{ type: 'QuestionAnalytics', id: quizId }],
+    }),
+
+    getQuizAttempts: build.query({
+      query: (quizId) => `/admin/quizzes/${quizId}/attempts`,
+      providesTags: (result, error, quizId) => [{ type: 'QuizAttempts', id: quizId }],
+    }),
+
+    getAdminAttemptReview: build.query({
+      query: (attemptId) => `/admin/attempts/${attemptId}`,
+      providesTags: (result, error, attemptId) => [{ type: 'AttemptReview', id: attemptId }],
+    }),
   }),
 });
 
@@ -88,4 +108,8 @@ export const {
   useDeleteQuizMutation,
   useGetQuizInvitationsQuery,
   useBulkInviteStudentsMutation,
+  useGetQuizAnalyticsQuery,
+  useGetQuestionAnalyticsQuery,
+  useGetQuizAttemptsQuery,
+  useGetAdminAttemptReviewQuery,
 } = adminQuizzesApi;
