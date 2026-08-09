@@ -265,8 +265,34 @@ export default function QuizWorkspacePage() {
             </div>
           </div>
 
-          <div>
-            <h3 className="mb-3 text-sm font-semibold text-heading">Learner attempts</h3>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold text-heading">Learner attempts</h3>
+              <a
+                className="rounded-button border border-border px-3 py-1.5 text-sm font-medium text-heading hover:bg-background"
+                href={`${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/analytics/quiz/${quizId}/export.csv`}
+                onClick={(event) => {
+                  event.preventDefault();
+                  const token = localStorage.getItem('token');
+                  fetch(
+                    `${import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'}/analytics/quiz/${quizId}/export.csv`,
+                    { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+                  )
+                    .then((res) => res.blob())
+                    .then((blob) => {
+                      const url = URL.createObjectURL(blob);
+                      const anchor = document.createElement('a');
+                      anchor.href = url;
+                      anchor.download = `quiz-${quizId}-results.csv`;
+                      anchor.click();
+                      URL.revokeObjectURL(url);
+                    })
+                    .catch(() => {});
+                }}
+              >
+                Export CSV
+              </a>
+            </div>
             <div className="overflow-hidden rounded-card border border-border">
               <table className="w-full text-left text-sm">
                 <thead className="border-b border-border bg-background text-xs uppercase text-muted">

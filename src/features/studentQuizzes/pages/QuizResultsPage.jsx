@@ -120,6 +120,19 @@ export default function QuizResultsPage() {
               </div>
             ) : null}
 
+            {data.review?.length && data.passed === false ? (
+              <div className="mb-6 rounded-card border border-warning/20 bg-warning/5 p-4">
+                <h2 className="text-sm font-bold text-heading">What to revisit</h2>
+                <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-body">
+                  {data.review
+                    .filter((item) => item.isCorrect === false)
+                    .map((item) => (
+                      <li key={item.questionId}>{item.text}</li>
+                    ))}
+                </ul>
+              </div>
+            ) : null}
+
             {data.review?.length ? (
               <div className="space-y-4">
                 <h2 className="text-base font-bold text-heading">Review</h2>

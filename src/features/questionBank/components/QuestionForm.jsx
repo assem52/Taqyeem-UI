@@ -54,6 +54,7 @@ export default function QuestionForm({
   const initialType =
     question?.type === 'TRUE_FALSE' ? 'TRUE_FALSE' : 'MCQ';
   const [text, setText] = useState(question?.text ?? '');
+  const [explanation, setExplanation] = useState(question?.explanation ?? '');
   const [type, setType] = useState(initialType);
   const [points, setPoints] = useState(question?.points ?? 1);
   const [options, setOptions] = useState(() => initialOptions(question, initialType));
@@ -123,6 +124,7 @@ export default function QuestionForm({
     try {
       await onSave({
         text: text.trim(),
+        explanation: explanation.trim() || undefined,
         type,
         points: Number(points),
         options: options.map((option, index) => ({
@@ -189,6 +191,23 @@ export default function QuestionForm({
             {fieldErrors.text}
           </p>
         )}
+      </div>
+
+      <div>
+        <label htmlFor="question-explanation" className={labelClass}>
+          Explanation (shown after review unlocks)
+        </label>
+        <textarea
+          id="question-explanation"
+          rows={2}
+          value={explanation}
+          onChange={(event) => {
+            setExplanation(event.target.value);
+            markDirty();
+          }}
+          className={inputClass}
+          placeholder="Optional teaching note for learners…"
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
