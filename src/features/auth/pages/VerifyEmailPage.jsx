@@ -11,6 +11,8 @@ import AuthShell, {
 } from '../components/AuthShell';
 import { Loader2 } from '../../../shared/components/Icons';
 
+const DEV_CODE = '00000';
+
 export default function VerifyEmailPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -44,7 +46,10 @@ export default function VerifyEmailPage() {
         : '/login';
       setTimeout(() => navigate(loginTarget), 1000);
     } catch (err) {
-      setError(err?.data?.message || 'Verification failed. Check your email and token.');
+      setError(
+        err?.data?.message ||
+          'Verification failed. Check your email and code.',
+      );
     }
   };
 
@@ -61,7 +66,9 @@ export default function VerifyEmailPage() {
       }).unwrap();
       setMessage(
         result?.message ||
-          'If that account needs verification, a new link has been sent.',
+          (import.meta.env.DEV
+            ? `Dev mode: use code ${DEV_CODE}.`
+            : 'If that account needs verification, a new code has been sent.'),
       );
     } catch (err) {
       setError(err?.data?.message || 'Could not resend verification.');
@@ -71,7 +78,11 @@ export default function VerifyEmailPage() {
   return (
     <AuthShell
       title="Verify your email"
-      subtitle="Open the link from your email, or paste the verification token below."
+      subtitle={
+        import.meta.env.DEV
+          ? `Enter the code from your email. Dev escape code: ${DEV_CODE}.`
+          : 'Enter the verification code from your email, or open the link we sent you.'
+      }
       footer={
         <Link
           to={next ? `/login?next=${encodeURIComponent(next)}` : '/login'}
@@ -114,16 +125,25 @@ export default function VerifyEmailPage() {
         </div>
         <div>
           <label htmlFor="verify-token" className={authLabelClass}>
-            Verification token
+            Verification code
           </label>
           <input
             id="verify-token"
             type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
             value={token}
             onChange={(e) => setToken(e.target.value)}
+            placeholder={import.meta.env.DEV ? DEV_CODE : 'Enter code'}
             className={authFieldClass}
             required
           />
+          {import.meta.env.DEV ? (
+            <p className="text-muted mt-1.5 text-xs">
+              Prefer the emailed code. Escape:{' '}
+              <span className="text-heading font-semibold">{DEV_CODE}</span>
+            </p>
+          ) : null}
         </div>
         <button
           type="submit"

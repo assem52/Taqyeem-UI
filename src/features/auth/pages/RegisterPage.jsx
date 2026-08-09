@@ -27,7 +27,7 @@ export default function RegisterPage() {
       const result = await register({ name, email, password }).unwrap();
       setSuccessMsg(
         result.message ||
-          'Registered. Check your email for a verification link (or the API log in simulated mode).',
+          'Registered. Enter your verification code on the next screen.',
       );
       const params = new URLSearchParams({
         email: email.trim().toLowerCase(),
