@@ -13,6 +13,10 @@ import NotFound from "../shared/components/NotFound";
 import LoginPage from "../features/auth/pages/LoginPage";
 import RegisterPage from "../features/auth/pages/RegisterPage";
 import VerifyEmailPage from "../features/auth/pages/VerifyEmailPage";
+import ForgotPasswordPage from "../features/auth/pages/ForgotPasswordPage";
+import ResetPasswordPage from "../features/auth/pages/ResetPasswordPage";
+import MessagePage from "../shared/components/MessagePage";
+import { AlertCircle } from "../shared/components/Icons";
 
 function RequireAuth({ children }) {
   const token = localStorage.getItem('token');
@@ -32,10 +36,18 @@ function RequireRole({ role, children }) {
   }
 
   if (currentRole !== role) {
+    const home = currentRole === 'ADMIN' ? '/admin/quizzes' : '/';
     return (
-      <Navigate
-        to={currentRole === 'ADMIN' ? '/admin/quizzes' : '/'}
-        replace
+      <MessagePage
+        icon={AlertCircle}
+        title="Wrong account type"
+        description={
+          role === 'ADMIN'
+            ? 'This area is for instructors only. Sign in with an admin account, or go back to your learner home.'
+            : 'This area is for learners only. Sign in with a student account, or go back to your instructor home.'
+        }
+        buttonText={currentRole === 'ADMIN' ? 'Go to instructor home' : 'Go to learner home'}
+        buttonLink={home}
       />
     );
   }
@@ -47,6 +59,8 @@ export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   { path: '/verify', element: <VerifyEmailPage /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   {
     path: '/',
     element: (

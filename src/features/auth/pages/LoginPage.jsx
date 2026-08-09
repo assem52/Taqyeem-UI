@@ -207,6 +207,8 @@ export default function LoginPage() {
         <p style={{ marginTop: '20px', textAlign: 'center', fontSize: '13px', color: '#64748b' }}>
           No account?{' '}
           <Link to="/register" style={{ color: '#2563eb', fontWeight: 600 }}>Register</Link>
+          {' · '}
+          <Link to="/forgot-password" style={{ color: '#2563eb', fontWeight: 600 }}>Forgot password</Link>
         </p>
       </div>
     </div>

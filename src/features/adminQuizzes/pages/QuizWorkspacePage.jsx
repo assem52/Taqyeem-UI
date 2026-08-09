@@ -7,7 +7,6 @@ import InvitationTrackerTable from '../components/InvitationTrackerTable';
 import {
   useGetAdminQuizByIdQuery,
   useGetQuizAnalyticsQuery,
-  useGetQuestionAnalyticsQuery,
   useGetQuizAttemptsQuery,
   usePublishQuizMutation,
   useUnpublishQuizMutation,
@@ -46,9 +45,7 @@ export default function QuizWorkspacePage() {
   const { data: analytics } = useGetQuizAnalyticsQuery(quizId, {
     skip: tab !== 'overview' && tab !== 'results',
   });
-  const { data: questionAnalytics = [] } = useGetQuestionAnalyticsQuery(quizId, {
-    skip: tab !== 'results',
-  });
+  const questionAnalytics = analytics?.questions ?? [];
   const { data: attempts = [] } = useGetQuizAttemptsQuery(quizId, {
     skip: tab !== 'results',
   });

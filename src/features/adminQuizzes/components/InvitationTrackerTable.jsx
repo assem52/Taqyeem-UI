@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { useGetQuizInvitationsQuery } from '../adminQuizzesApi';
+import {
+  useGetQuizInvitationsQuery,
+  useResendInvitationMutation,
+} from '../adminQuizzesApi';
 
 const STATUS_LABELS = {
   SUBMITTED: 'Submitted',
@@ -23,7 +26,10 @@ export default function InvitationTrackerTable({ quizId }) {
   const { data, isLoading, isError, refetch } = useGetQuizInvitationsQuery(quizId, {
     skip: !quizId,
   });
+  const [resendInvitation, { isLoading: isResending }] = useResendInvitationMutation();
   const [copiedEmail, setCopiedEmail] = useState('');
+  const [resendNote, setResendNote] = useState('');
+  const [resendingId, setResendingId] = useState('');
 
   if (isLoading) {
     return <p className="text-muted py-6 text-center text-sm">Loading invitations…</p>;
@@ -46,6 +52,23 @@ export default function InvitationTrackerTable({ quizId }) {
 
   const { summary, rows, note } = data;
 
+  const handleResend = async (invitationId, email) => {
+    setResendNote('');
+    setResendingId(invitationId);
+    try {
+      const result = await resendInvitation({ quizId, invitationId }).unwrap();
+      setResendNote(
+        result.status === 'SENT'
+          ? `Resent to ${email}${result.deliveryMode === 'simulated' ? ' (simulated — use Copy link)' : ''}.`
+          : `Resend failed for ${email}. Copy the invite link instead.`,
+      );
+    } catch {
+      setResendNote(`Could not resend to ${email}.`);
+    } finally {
+      setResendingId('');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <p className="text-muted text-sm">
@@ -63,6 +86,7 @@ export default function InvitationTrackerTable({ quizId }) {
       </p>
 
       {note && <p className="text-muted text-xs leading-relaxed">{note}</p>}
+      {resendNote ? <p className="text-sm text-heading">{resendNote}</p> : null}
 
       <div className="border-border overflow-hidden rounded-card border">
         <table className="w-full text-left text-sm">
@@ -71,7 +95,7 @@ export default function InvitationTrackerTable({ quizId }) {
               <th className="px-3 py-2.5">Email</th>
               <th className="px-3 py-2.5">Name</th>
               <th className="px-3 py-2.5">Status</th>
-              <th className="px-3 py-2.5">Invite link</th>
+              <th className="px-3 py-2.5">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-border divide-y">
@@ -92,23 +116,39 @@ export default function InvitationTrackerTable({ quizId }) {
                     {STATUS_LABELS[row.status] ?? row.status}
                   </td>
                   <td className="px-3 py-2.5">
-                    {row.inviteUrl ? (
-                      <button
-                        type="button"
-                        className="text-primary hover:text-primary-hover text-xs font-semibold"
-                        onClick={async () => {
-                          const ok = await copyText(row.inviteUrl);
-                          if (ok) {
-                            setCopiedEmail(row.email);
-                            setTimeout(() => setCopiedEmail(''), 1500);
-                          }
-                        }}
-                      >
-                        {copiedEmail === row.email ? 'Copied' : 'Copy link'}
-                      </button>
-                    ) : (
-                      <span className="text-muted text-xs">—</span>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {row.inviteUrl ? (
+                        <button
+                          type="button"
+                          className="text-primary hover:text-primary-hover text-xs font-semibold"
+                          onClick={async () => {
+                            const ok = await copyText(row.inviteUrl);
+                            if (ok) {
+                              setCopiedEmail(row.email);
+                              setTimeout(() => setCopiedEmail(''), 1500);
+                            }
+                          }}
+                        >
+                          {copiedEmail === row.email ? 'Copied' : 'Copy link'}
+                        </button>
+                      ) : (
+                        <span className="text-muted text-xs">—</span>
+                      )}
+                      {row.invitationId ? (
+                        <button
+                          type="button"
+                          disabled={isResending && resendingId === row.invitationId}
+                          className="text-xs font-semibold text-heading underline disabled:opacity-50"
+                          onClick={() => handleResend(row.invitationId, row.email)}
+                        >
+                          {isResending && resendingId === row.invitationId
+                            ? 'Resending…'
+                            : row.status === 'FAILED'
+                              ? 'Resend email'
+                              : 'Resend'}
+                        </button>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))

@@ -406,15 +406,18 @@ export default function QuizAttemptPage() {
 
           {remainingSeconds != null && (
             <div
-              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold tabular-nums ${
                 timerUrgent
                   ? 'border-danger/30 bg-danger/10 text-danger'
                   : 'border-border bg-background text-heading'
               }`}
-              aria-live="polite"
+              role="timer"
+              aria-live={timerUrgent ? 'assertive' : 'polite'}
+              aria-atomic="true"
+              aria-label={`Time remaining ${formatCountdown(remainingSeconds)}`}
             >
-              <Clock size={12} />
-              {formatCountdown(remainingSeconds)}
+              <Clock size={12} aria-hidden="true" />
+              <span>{formatCountdown(remainingSeconds)}</span>
             </div>
           )}
 
@@ -568,11 +571,35 @@ export default function QuizAttemptPage() {
       </div>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface p-3 lg:hidden">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          {remainingSeconds != null ? (
+            <div
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold tabular-nums ${
+                timerUrgent
+                  ? 'border-danger/30 bg-danger/10 text-danger'
+                  : 'border-border bg-background text-heading'
+              }`}
+              role="timer"
+              aria-live={timerUrgent ? 'assertive' : 'off'}
+              aria-label={`Time remaining ${formatCountdown(remainingSeconds)}`}
+            >
+              <Clock size={12} aria-hidden="true" />
+              {formatCountdown(remainingSeconds)}
+            </div>
+          ) : (
+            <span className="text-xs text-muted">
+              {answeredCount}/{totalQuestions} answered
+            </span>
+          )}
+          <span className="text-xs font-medium text-muted">
+            Q{currentIndex + 1}/{totalQuestions}
+          </span>
+        </div>
         <button
           type="button"
           onClick={openSubmitConfirm}
           disabled={isSubmitting || isFlushing}
-          className="inline-flex w-full items-center justify-center rounded-button bg-primary px-4 py-3 text-sm font-semibold text-white shadow-soft disabled:opacity-50"
+          className="inline-flex w-full items-center justify-center rounded-button bg-primary px-4 py-3 text-sm font-semibold text-white shadow-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
         >
           {isSubmitting || isFlushing ? 'Submitting…' : 'Submit quiz'}
         </button>
