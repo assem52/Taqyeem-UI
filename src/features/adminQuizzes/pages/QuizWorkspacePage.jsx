@@ -4,6 +4,7 @@ import AdminShell from '../../../shared/components/AdminShell';
 import QuizDetailModal from '../components/QuizDetailModal';
 import BulkInviteModal from '../components/BulkInviteModal';
 import InvitationTrackerTable from '../components/InvitationTrackerTable';
+import CohortOutcomesSnapshot from '../components/CohortOutcomesSnapshot';
 import {
   useGetAdminQuizByIdQuery,
   useGetQuizAnalyticsQuery,
@@ -35,9 +36,11 @@ export default function QuizWorkspacePage() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const tab = params.get('tab') || 'overview';
+  const view = params.get('view') || '';
   const setTab = (next) => {
     const nextParams = new URLSearchParams(params);
     nextParams.set('tab', next);
+    if (next !== 'results') nextParams.delete('view');
     setParams(nextParams, { replace: true });
   };
 
@@ -221,6 +224,14 @@ export default function QuizWorkspacePage() {
 
       {tab === 'results' && (
         <div className="space-y-6">
+          <CohortOutcomesSnapshot
+            quiz={quiz}
+            analytics={analytics}
+            attempts={attempts}
+            quizId={quizId}
+            highlight={view === 'snapshot'}
+          />
+
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard label="Average score" value={analytics ? `${analytics.averageScore}%` : '—'} />
             <MetricCard label="Pass rate" value={analytics ? `${analytics.passRate}%` : '—'} />

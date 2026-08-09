@@ -79,9 +79,11 @@ export default function QuestionBankPage() {
     return () => window.removeEventListener('beforeunload', warnBeforeUnload);
   }, [isDirty]);
 
+  const returnTo = location.state?.returnTo;
+
   const leavePage = () => {
     if (!isDirty || window.confirm('Leave and discard unsaved question changes?')) {
-      navigate('/admin/quizzes');
+      navigate(returnTo || `/admin/quizzes/${quizId}`);
     }
   };
 
@@ -185,7 +187,7 @@ export default function QuestionBankPage() {
             onClick={leavePage}
             className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2 text-sm font-medium"
           >
-            Back to quizzes
+            {returnTo ? 'Continue launch' : 'Back to workspace'}
           </button>
           <DuplicateQuizButton
             quiz={quiz}

@@ -3,12 +3,14 @@ import DashboardPage from "../features/studentQuizzes/pages/DashboardPage";
 import QuizGatewayPage from "../features/studentQuizzes/pages/QuizGatewayPage";
 import AdminFollowUpPage from "../features/adminFollowUp/pages/AdminFollowUpPage";
 import AdminQuizzesListPage from "../features/adminQuizzes/pages/AdminQuizzesListPage";
+import LaunchQuizWizardPage from "../features/adminQuizzes/pages/LaunchQuizWizardPage";
 import QuizWorkspacePage from "../features/adminQuizzes/pages/QuizWorkspacePage";
 import AdminAttemptReviewPage from "../features/adminQuizzes/pages/AdminAttemptReviewPage";
 import QuestionBankPage from "../features/questionBank/pages/QuestionBankPage";
 import InvitationPage from "../features/studentQuizzes/pages/InvitationPage";
 import QuizAttemptPage from "../features/studentQuizzes/pages/QuizAttemptPage";
 import QuizResultsPage from "../features/studentQuizzes/pages/QuizResultsPage";
+import PitchLandingPage from "../features/marketing/pages/PitchLandingPage";
 import NotFound from "../shared/components/NotFound";
 import LoginPage from "../features/auth/pages/LoginPage";
 import RegisterPage from "../features/auth/pages/RegisterPage";
@@ -56,6 +58,7 @@ function RequireRole({ role, children }) {
 }
 
 export const router = createBrowserRouter([
+  { path: '/welcome', element: <PitchLandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
   { path: '/verify', element: <VerifyEmailPage /> },
@@ -117,6 +120,16 @@ export const router = createBrowserRouter([
       <RequireAuth>
         <RequireRole role="ADMIN">
           <AdminQuizzesListPage />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/admin/quizzes/launch',
+    element: (
+      <RequireAuth>
+        <RequireRole role="ADMIN">
+          <LaunchQuizWizardPage />
         </RequireRole>
       </RequireAuth>
     ),

@@ -1,8 +1,17 @@
 import { Link, useLocation } from 'react-router-dom';
 
 const NAV = [
-  { to: '/admin/quizzes', label: 'Quizzes', match: (path) => path.startsWith('/admin/quizzes') },
-  { to: '/admin/follow-up', label: 'Follow-up', match: (path) => path.startsWith('/admin/follow-up') },
+  {
+    to: '/admin/quizzes',
+    label: 'Cohorts',
+    match: (path) =>
+      path.startsWith('/admin/quizzes') && !path.startsWith('/admin/follow-up'),
+  },
+  {
+    to: '/admin/follow-up',
+    label: 'Morning follow-up',
+    match: (path) => path.startsWith('/admin/follow-up'),
+  },
 ];
 
 function logout() {
@@ -20,8 +29,9 @@ export default function AdminShell({ title, subtitle, actions, children }) {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div className="min-w-0">
             <Link to="/admin/quizzes" className="font-display text-heading text-xl tracking-tight">
-              QnA Admin
+              QnA
             </Link>
+            <p className="text-muted mt-0.5 text-xs">Cohort assessment & outcomes</p>
             <nav className="mt-2 flex flex-wrap gap-4 text-sm" aria-label="Admin">
               {NAV.map((item) => {
                 const active = item.match(pathname);
@@ -58,11 +68,9 @@ export default function AdminShell({ title, subtitle, actions, children }) {
         {(title || subtitle) && (
           <div className="mb-8 max-w-2xl">
             {title && (
-              <h1 className="font-display text-heading text-3xl tracking-tight sm:text-4xl">
-                {title}
-              </h1>
+              <h1 className="font-display text-heading text-3xl tracking-tight">{title}</h1>
             )}
-            {subtitle && <p className="text-body mt-2 text-base leading-relaxed">{subtitle}</p>}
+            {subtitle && <p className="text-muted mt-2 text-sm leading-relaxed">{subtitle}</p>}
           </div>
         )}
         {children}

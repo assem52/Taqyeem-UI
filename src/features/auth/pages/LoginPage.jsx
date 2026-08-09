@@ -107,6 +107,11 @@ export default function LoginPage() {
           <p style={{ margin: '10px 0 0', color: '#94a3b8', fontSize: '12px' }}>
             Demo: assem.test@example.com / Student123! · admin@example.com / Admin123!
           </p>
+          <p style={{ margin: '12px 0 0' }}>
+            <Link to="/welcome" style={{ color: '#2563eb', fontWeight: 600, fontSize: '13px' }}>
+              What is QnA?
+            </Link>
+          </p>
         </div>
 
         {errorMsg && (
