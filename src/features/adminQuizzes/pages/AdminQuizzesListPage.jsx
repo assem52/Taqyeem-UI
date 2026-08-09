@@ -133,7 +133,7 @@ export default function AdminQuizzesListPage() {
         />
 
         <div className="border-border bg-surface flex overflow-hidden rounded-input border text-sm" role="group" aria-label="Filter by status">
-          {['ALL', 'DRAFT', 'PUBLISHED', 'ARCHIVED'].map((st) => (
+          {['ALL', 'DRAFT', 'PUBLISHED'].map((st) => (
             <button
               key={st}
               type="button"
