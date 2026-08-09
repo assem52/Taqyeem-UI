@@ -160,15 +160,15 @@ export default function LaunchQuizWizardPage() {
 
   return (
     <AdminShell
-      title="Launch a cohort quiz"
-      subtitle="One guided job: basics → questions → publish → invite."
+      title="Launch quiz"
+      subtitle="Basics, questions, publish, then invite — one path."
       actions={
         quizId ? (
           <Link
             to={`/admin/quizzes/${quizId}`}
-            className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2 text-sm font-medium"
+            className="border-border text-heading hover:bg-background rounded-button border px-3 py-1.5 text-sm font-medium"
           >
-            Open workspace
+            Workspace
           </Link>
         ) : null
       }

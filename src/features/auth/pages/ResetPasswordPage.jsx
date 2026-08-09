@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useResetPasswordMutation } from '../authApi';
+import AuthShell, {
+  authFieldClass,
+  authLabelClass,
+  authPrimaryBtnClass,
+} from '../components/AuthShell';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -32,196 +37,78 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        backgroundColor: '#0f172a',
-        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-        padding: '20px',
-      }}
+    <AuthShell
+      title="Choose a new password"
+      subtitle="Paste the reset token from your email (or the API log in development)."
+      footer={
+        <Link to="/login" className="text-primary font-semibold hover:underline">
+          Back to sign in
+        </Link>
+      }
     >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '420px',
-          padding: '40px 35px',
-          borderRadius: '16px',
-          boxShadow:
-            '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3)',
-          background: '#ffffff',
-          boxSizing: 'border-box',
-        }}
-      >
-        <h2
-          style={{
-            margin: '0 0 8px 0',
-            color: '#1e293b',
-            fontSize: '24px',
-            fontWeight: '700',
-          }}
+      {message ? (
+        <div
+          role="status"
+          className="border-success/20 bg-success/10 text-success mb-5 rounded-button border px-3.5 py-2.5 text-sm"
         >
-          Choose a new password
-        </h2>
-        <p style={{ margin: '0 0 24px', color: '#64748b', fontSize: '14px' }}>
-          Paste the reset token from your email (or server log in development).
-        </p>
-
-        {message && (
-          <div
-            style={{
-              backgroundColor: '#ecfdf5',
-              border: '1px solid #a7f3d0',
-              color: '#065f46',
-              padding: '10px 14px',
-              borderRadius: '8px',
-              marginBottom: '20px',
-              fontSize: '13px',
-            }}
-          >
-            {message}
-          </div>
-        )}
-
-        {errorMsg && (
-          <div
-            style={{
-              backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
-              color: '#991b1b',
-              padding: '10px 14px',
-              borderRadius: '8px',
-              marginBottom: '20px',
-              fontSize: '13px',
-            }}
-          >
-            {errorMsg}
-          </div>
-        )}
-
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}
+          {message}
+        </div>
+      ) : null}
+      {errorMsg ? (
+        <div
+          role="alert"
+          className="border-danger/20 bg-danger/5 text-danger mb-5 rounded-button border px-3.5 py-2.5 text-sm"
         >
-          <div>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontWeight: '600',
-                color: '#334155',
-                fontSize: '13px',
-              }}
-            >
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                border: '1px solid #cbd5e1',
-                borderRadius: '8px',
-                fontSize: '14px',
-                boxSizing: 'border-box',
-                backgroundColor: '#f8fafc',
-              }}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontWeight: '600',
-                color: '#334155',
-                fontSize: '13px',
-              }}
-            >
-              Reset token
-            </label>
-            <input
-              type="text"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              required
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                border: '1px solid #cbd5e1',
-                borderRadius: '8px',
-                fontSize: '14px',
-                boxSizing: 'border-box',
-                backgroundColor: '#f8fafc',
-              }}
-            />
-          </div>
-          <div>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontWeight: '600',
-                color: '#334155',
-                fontSize: '13px',
-              }}
-            >
-              New password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                border: '1px solid #cbd5e1',
-                borderRadius: '8px',
-                fontSize: '14px',
-                boxSizing: 'border-box',
-                backgroundColor: '#f8fafc',
-              }}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={isLoading}
-            style={{
-              padding: '12px',
-              background: '#2563eb',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '15px',
-              marginTop: '8px',
-            }}
-          >
-            {isLoading ? 'Updating…' : 'Update password'}
-          </button>
-        </form>
+          {errorMsg}
+        </div>
+      ) : null}
 
-        <p
-          style={{
-            marginTop: '20px',
-            textAlign: 'center',
-            fontSize: '13px',
-            color: '#64748b',
-          }}
-        >
-          <Link to="/login" style={{ color: '#2563eb', fontWeight: 600 }}>
-            Back to sign in
-          </Link>
-        </p>
-      </div>
-    </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="reset-email" className={authLabelClass}>
+            Email
+          </label>
+          <input
+            id="reset-email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={authFieldClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="reset-token" className={authLabelClass}>
+            Reset token
+          </label>
+          <input
+            id="reset-token"
+            type="text"
+            required
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            className={authFieldClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="reset-password" className={authLabelClass}>
+            New password
+          </label>
+          <input
+            id="reset-password"
+            type="password"
+            required
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className={authFieldClass}
+            autoComplete="new-password"
+          />
+        </div>
+        <button type="submit" disabled={isLoading} className={`${authPrimaryBtnClass} mt-2`}>
+          {isLoading ? 'Updating…' : 'Update password'}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

@@ -41,7 +41,7 @@ export default function CohortOutcomesSnapshot({
 
   const summaryText = useMemo(() => {
     const lines = [
-      `QnA cohort outcomes — ${quiz?.title || 'Quiz'}`,
+      `Taqyem cohort outcomes — ${quiz?.title || 'Quiz'}`,
       `Window: ${formatWhen(quiz?.openDate)} → ${formatWhen(quiz?.closesAt)}`,
       `Invited: ${analytics?.invitedCount ?? '—'}`,
       `Enrolled: ${analytics?.enrolledCount ?? '—'}`,
@@ -75,20 +75,20 @@ export default function CohortOutcomesSnapshot({
   return (
     <section
       id="outcomes-snapshot"
-      className={`rounded-card border bg-surface p-6 sm:p-8 ${
-        highlight ? 'border-primary ring-2 ring-primary/20' : 'border-border'
+      className={`bg-surface rounded-card border p-6 sm:p-8 ${
+        highlight ? 'border-primary ring-primary/15 ring-2' : 'border-border'
       }`}
       aria-label="Cohort outcomes snapshot"
     >
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-muted text-xs font-semibold tracking-wider uppercase">
-            Stakeholder snapshot
+        <div className="min-w-0">
+          <p className="text-muted text-[11px] font-semibold tracking-wider uppercase">
+            Outcomes
           </p>
-          <h3 className="font-display text-heading mt-2 text-2xl tracking-tight sm:text-3xl">
+          <h3 className="font-display text-heading mt-1.5 text-xl tracking-tight sm:text-2xl">
             {quiz?.title || 'Cohort outcomes'}
           </h3>
-          <p className="text-muted mt-2 text-sm">
+          <p className="text-muted mt-1.5 text-sm">
             {formatWhen(quiz?.openDate)} → {formatWhen(quiz?.closesAt)}
           </p>
         </div>
@@ -102,7 +102,7 @@ export default function CohortOutcomesSnapshot({
                 setTimeout(() => setCopied(false), 1600);
               }
             }}
-            className="border-border text-heading hover:bg-background rounded-button border px-3 py-1.5 text-sm font-medium"
+            className="text-primary text-sm font-semibold hover:underline"
           >
             {copied ? 'Copied' : 'Copy summary'}
           </button>
@@ -116,49 +116,25 @@ export default function CohortOutcomesSnapshot({
         </div>
       </div>
 
-      <dl className="mt-8 grid gap-6 sm:grid-cols-3">
-        <div>
-          <dt className="text-muted text-xs font-semibold uppercase tracking-wider">Invited</dt>
-          <dd className="font-display text-heading mt-1 text-3xl tabular-nums">
-            {analytics?.invitedCount ?? '—'}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted text-xs font-semibold uppercase tracking-wider">Submitted</dt>
-          <dd className="font-display text-heading mt-1 text-3xl tabular-nums">
-            {analytics?.submittedCount ?? '—'}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted text-xs font-semibold uppercase tracking-wider">Completion</dt>
-          <dd className="font-display text-heading mt-1 text-3xl tabular-nums">
-            {analytics != null ? `${analytics.completionRate}%` : '—'}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted text-xs font-semibold uppercase tracking-wider">Pass rate</dt>
-          <dd className="font-display text-heading mt-1 text-3xl tabular-nums">
-            {analytics != null ? `${analytics.passRate}%` : '—'}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted text-xs font-semibold uppercase tracking-wider">Avg score</dt>
-          <dd className="font-display text-heading mt-1 text-3xl tabular-nums">
-            {analytics != null ? `${analytics.averageScore}%` : '—'}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-muted text-xs font-semibold uppercase tracking-wider">Needs review</dt>
-          <dd className="font-display text-heading mt-1 text-3xl tabular-nums">
-            {needsReviewCount}
-          </dd>
-        </div>
+      <dl className="border-border mt-6 grid gap-5 border-t pt-6 sm:grid-cols-3">
+        {[
+          ['Invited', analytics?.invitedCount ?? '—'],
+          ['Submitted', analytics?.submittedCount ?? '—'],
+          ['Completion', analytics != null ? `${analytics.completionRate}%` : '—'],
+          ['Pass rate', analytics != null ? `${analytics.passRate}%` : '—'],
+          ['Avg score', analytics != null ? `${analytics.averageScore}%` : '—'],
+          ['Needs review', needsReviewCount],
+        ].map(([label, value]) => (
+          <div key={label}>
+            <dt className="text-muted text-[11px] font-semibold tracking-wider uppercase">
+              {label}
+            </dt>
+            <dd className="font-display text-heading mt-1 text-2xl tabular-nums tracking-tight">
+              {value}
+            </dd>
+          </div>
+        ))}
       </dl>
-
-      <p className="text-muted mt-8 max-w-2xl text-sm leading-relaxed">
-        Proof for sponsors and mentors: who entered, who finished, who passed, and who still needs
-        a human look — without rebuilding charts by hand.
-      </p>
     </section>
   );
 }

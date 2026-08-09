@@ -23,10 +23,10 @@ const TABS = [
 
 function MetricCard({ label, value, hint }) {
   return (
-    <div className="rounded-card border border-border bg-surface p-4">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-heading">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-muted">{hint}</p> : null}
+    <div className="border-border/80 py-1">
+      <p className="text-muted text-[11px] font-semibold tracking-wider uppercase">{label}</p>
+      <p className="font-display text-heading mt-1 text-2xl tabular-nums tracking-tight">{value}</p>
+      {hint ? <p className="text-muted mt-0.5 text-xs">{hint}</p> : null}
     </div>
   );
 }
@@ -126,7 +126,7 @@ export default function QuizWorkspacePage() {
         </div>
       ) : null}
 
-      <div className="mb-6 flex flex-wrap gap-2 border-b border-border pb-3">
+      <div className="border-border mb-8 flex flex-wrap gap-1 border-b">
         {TABS.map((item) => (
           <button
             key={item.id}
@@ -138,10 +138,10 @@ export default function QuizWorkspacePage() {
               }
               setTab(item.id);
             }}
-            className={`rounded-button px-3.5 py-2 text-sm font-medium transition ${
+            className={`-mb-px border-b-2 px-3.5 py-2.5 text-sm font-medium transition ${
               tab === item.id
-                ? 'bg-primary-soft text-heading'
-                : 'text-muted hover:bg-background hover:text-heading'
+                ? 'border-primary text-heading'
+                : 'text-muted hover:text-heading border-transparent'
             }`}
           >
             {item.label}
@@ -150,9 +150,9 @@ export default function QuizWorkspacePage() {
       </div>
 
       {tab === 'overview' && (
-        <div className="space-y-6">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <MetricCard label="Invited" value={analytics?.invitedCount ?? '—'} hint="Distinct invite emails" />
+        <div className="space-y-8">
+          <div className="border-border grid gap-6 border-b pb-8 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard label="Invited" value={analytics?.invitedCount ?? '—'} />
             <MetricCard label="Enrolled" value={analytics?.enrolledCount ?? '—'} />
             <MetricCard label="Submitted" value={analytics?.submittedCount ?? '—'} />
             <MetricCard
@@ -162,46 +162,46 @@ export default function QuizWorkspacePage() {
           </div>
 
           {!quiz.isValid && quiz.validationErrors?.length ? (
-            <div className="rounded-card border border-warning/25 bg-warning/5 p-4 text-sm text-warning">
+            <div className="border-warning/25 bg-warning/5 text-warning rounded-card border px-4 py-3 text-sm">
               <p className="font-semibold">Cannot publish yet</p>
-              <ul className="mt-2 list-inside list-disc space-y-1">
+              <ul className="mt-2 list-inside list-disc space-y-1 text-xs opacity-90">
                 {quiz.validationErrors.map((err) => (
                   <li key={err}>{err}</li>
                 ))}
               </ul>
               <Link
                 to={`/admin/quizzes/${quizId}/questions`}
-                className="mt-3 inline-block font-semibold underline"
+                className="mt-3 inline-block text-sm font-semibold underline"
               >
                 Fix questions
               </Link>
             </div>
           ) : (
-            <p className="text-sm text-muted">
-              Validation is green. Publish when ready, then invite your cohort from Access.
+            <p className="text-muted text-sm leading-relaxed">
+              Ready to publish when you are. Invite the cohort from Access.
             </p>
           )}
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
             <Link
               to={`/admin/quizzes/${quizId}/questions`}
-              className="rounded-button border border-border px-3 py-2 text-sm font-medium"
+              className="text-primary font-semibold hover:underline"
             >
-              Manage questions
+              Questions
             </Link>
             <button
               type="button"
               onClick={() => setInviteOpen(true)}
-              className="rounded-button border border-border px-3 py-2 text-sm font-medium"
+              className="text-primary font-semibold hover:underline"
             >
-              Invite students
+              Invite
             </button>
             <button
               type="button"
               onClick={() => setSettingsOpen(true)}
-              className="rounded-button border border-border px-3 py-2 text-sm font-medium"
+              className="text-primary font-semibold hover:underline"
             >
-              Edit settings
+              Settings
             </button>
           </div>
         </div>
@@ -232,7 +232,7 @@ export default function QuizWorkspacePage() {
             highlight={view === 'snapshot'}
           />
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="border-border grid gap-6 border-b pb-8 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard label="Average score" value={analytics ? `${analytics.averageScore}%` : '—'} />
             <MetricCard label="Pass rate" value={analytics ? `${analytics.passRate}%` : '—'} />
             <MetricCard label="Passed" value={analytics?.passedCount ?? '—'} />

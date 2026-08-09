@@ -12,39 +12,41 @@ export default function AppHeader() {
     .join('') || 'ST';
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-surface px-4 shadow-sm sm:px-6 lg:px-8">
-      <div className="flex items-center gap-4">
-        <Link to="/" className="flex items-center gap-3 focus:outline-none">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white shadow-soft">
-            Q
-          </div>
-          <span className="text-lg font-bold tracking-tight text-heading">QnA</span>
+    <header className="border-border/80 bg-surface/90 sticky top-0 z-30 w-full border-b backdrop-blur-md">
+      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
+        <Link to="/" className="flex items-center gap-2.5 focus:outline-none">
+          <span className="bg-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white shadow-soft">
+            T
+          </span>
+          <span className="font-display text-heading text-lg tracking-tight">Taqyem</span>
         </Link>
-      </div>
 
-      <div className="flex items-center gap-3">
-        {me?.name ? (
-          <span className="hidden text-sm font-medium text-muted sm:inline">{me.name}</span>
-        ) : null}
+        <div className="flex items-center gap-3">
+          {me?.name ? (
+            <span className="text-muted hidden max-w-[10rem] truncate text-sm sm:inline">
+              {me.name}
+            </span>
+          ) : null}
 
-        <button
-          type="button"
-          className="rounded-md px-2 py-1 text-sm font-medium text-muted hover:bg-background hover:text-heading"
-          onClick={() => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('role');
-            localStorage.removeItem('studentId');
-            window.location.href = '/login';
-          }}
-        >
-          Log out
-        </button>
+          <button
+            type="button"
+            className="text-muted hover:text-heading hover:bg-background rounded-button px-2.5 py-1.5 text-sm font-medium transition"
+            onClick={() => {
+              localStorage.removeItem('token');
+              localStorage.removeItem('role');
+              localStorage.removeItem('studentId');
+              window.location.href = '/login';
+            }}
+          >
+            Log out
+          </button>
 
-        <div
-          className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-primary-soft text-sm font-medium text-primary"
-          aria-label={me?.name ? `Signed in as ${me.name}` : 'User profile'}
-        >
-          {initials}
+          <div
+            className="border-border bg-primary-soft text-primary flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold"
+            aria-label={me?.name ? `Signed in as ${me.name}` : 'User profile'}
+          >
+            {initials}
+          </div>
         </div>
       </div>
     </header>

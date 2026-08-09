@@ -376,8 +376,8 @@ export default function QuizAttemptPage() {
     <div className="flex min-h-screen flex-col bg-background font-sans">
       <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b border-border bg-surface px-4 shadow-sm sm:px-8">
         <div className="flex items-center gap-3">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-white">
-            Q
+          <div className="bg-primary flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white">
+            T
           </div>
           <h1 className="hidden max-w-md truncate text-base font-semibold text-heading sm:block">
             {quiz?.title || 'Quiz Attempt'}

@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useVerifyEmailMutation } from '../authApi';
-import AppHeader from '../../../shared/components/AppHeader';
+import AuthShell, {
+  authFieldClass,
+  authLabelClass,
+  authPrimaryBtnClass,
+} from '../components/AuthShell';
 import { Loader2 } from '../../../shared/components/Icons';
 
 export default function VerifyEmailPage() {
@@ -35,30 +39,35 @@ export default function VerifyEmailPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <AppHeader />
-      <main className="flex flex-1 items-center justify-center p-4">
-        <form
-          onSubmit={handleSubmit}
-          className="w-full max-w-md rounded-card border border-border bg-surface p-8 shadow-soft"
+    <AuthShell
+      title="Verify your email"
+      subtitle="Enter the email and verification token from registration."
+      footer={
+        <Link to="/login" className="text-primary font-semibold hover:underline">
+          Back to sign in
+        </Link>
+      }
+    >
+      {error ? (
+        <div
+          role="alert"
+          className="border-danger/20 bg-danger/5 text-danger mb-5 rounded-button border px-3.5 py-2.5 text-sm"
         >
-          <h1 className="text-2xl font-bold text-heading">Verify your email</h1>
-          <p className="mt-2 text-sm text-muted">
-            Enter the email and verification token from your registration message.
-          </p>
+          {error}
+        </div>
+      ) : null}
+      {message ? (
+        <div
+          role="status"
+          className="border-success/20 bg-success/10 text-success mb-5 rounded-button border px-3.5 py-2.5 text-sm"
+        >
+          {message}
+        </div>
+      ) : null}
 
-          {error ? (
-            <p className="mt-4 rounded-button border border-danger/20 bg-danger/5 px-3 py-2 text-sm text-danger">
-              {error}
-            </p>
-          ) : null}
-          {message ? (
-            <p className="mt-4 rounded-button border border-success/20 bg-success/10 px-3 py-2 text-sm text-success">
-              {message}
-            </p>
-          ) : null}
-
-          <label className="mt-6 block text-sm font-medium text-heading" htmlFor="verify-email">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="verify-email" className={authLabelClass}>
             Email
           </label>
           <input
@@ -66,11 +75,12 @@ export default function VerifyEmailPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1.5 w-full rounded-input border border-border bg-background px-3.5 py-2.5 text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            className={authFieldClass}
             required
           />
-
-          <label className="mt-4 block text-sm font-medium text-heading" htmlFor="verify-token">
+        </div>
+        <div>
+          <label htmlFor="verify-token" className={authLabelClass}>
             Verification token
           </label>
           <input
@@ -78,20 +88,19 @@ export default function VerifyEmailPage() {
             type="text"
             value={token}
             onChange={(e) => setToken(e.target.value)}
-            className="mt-1.5 w-full rounded-input border border-border bg-background px-3.5 py-2.5 text-sm text-heading outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+            className={authFieldClass}
             required
           />
-
-          <button
-            type="submit"
-            disabled={!canSubmit || isLoading}
-            className="mt-6 inline-flex w-full items-center justify-center rounded-button bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-soft hover:bg-primary-hover disabled:opacity-50"
-          >
-            {isLoading && <Loader2 size={16} className="mr-2" />}
-            Verify email
-          </button>
-        </form>
-      </main>
-    </div>
+        </div>
+        <button
+          type="submit"
+          disabled={!canSubmit || isLoading}
+          className={`${authPrimaryBtnClass} mt-2 inline-flex items-center justify-center gap-2`}
+        >
+          {isLoading ? <Loader2 size={16} className="animate-spin" /> : null}
+          {isLoading ? 'Verifying…' : 'Verify email'}
+        </button>
+      </form>
+    </AuthShell>
   );
 }

@@ -3,22 +3,18 @@ import AppHeader from '../../../shared/components/AppHeader';
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="bg-background flex min-h-screen flex-col">
       <AppHeader />
-
-      <header className="bg-surface border-border border-b px-4 py-6 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <h1 className="text-heading text-2xl font-bold tracking-tight">My Quizzes</h1>
-          <p className="text-muted text-sm mt-1">
-            Quizzes you are enrolled in, with your current status.
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+        <header className="mb-8 max-w-xl">
+          <h1 className="font-display text-heading text-2xl tracking-tight sm:text-3xl">
+            Your quizzes
+          </h1>
+          <p className="text-muted mt-1.5 text-sm leading-relaxed">
+            Open a quiz to continue, start, or review results.
           </p>
-        </div>
-      </header>
-
-      <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        <div className="mx-auto max-w-7xl">
-          <QuizzesList />
-        </div>
+        </header>
+        <QuizzesList />
       </main>
     </div>
   );

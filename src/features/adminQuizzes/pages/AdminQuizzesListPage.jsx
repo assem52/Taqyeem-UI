@@ -96,14 +96,14 @@ export default function AdminQuizzesListPage() {
 
   return (
     <AdminShell
-      title="Cohort workbench"
-      subtitle="Launch → monitor → act → report. Open a quiz workspace to run the full loop."
+      title="Cohorts"
+      subtitle="Open a workspace to monitor, invite, and prove outcomes."
       actions={
         <Link
           to="/admin/quizzes/launch"
-          className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white transition"
+          className="bg-primary hover:bg-primary-hover rounded-button px-3.5 py-2 text-sm font-semibold text-white transition"
         >
-          Launch a cohort quiz
+          Launch quiz
         </Link>
       }
     >
@@ -119,24 +119,20 @@ export default function AdminQuizzesListPage() {
         </div>
       )}
 
-      <div className="border-border bg-surface mb-6 flex flex-wrap items-center justify-between gap-3 rounded-card border px-4 py-3">
-        <div>
-          <p className="text-heading text-sm font-semibold">People who need attention today</p>
-          <p className="text-muted text-xs">
-            {followUpTotal == null
-              ? 'Open morning follow-up to coach at-risk learners.'
-              : followUpTotal === 0
-                ? 'No one needs chase right now.'
-                : `${followUpTotal} learner${followUpTotal === 1 ? '' : 's'} on the follow-up list.`}
+      {followUpTotal != null && followUpTotal > 0 ? (
+        <div className="border-border bg-primary-soft/60 mb-6 flex flex-wrap items-center justify-between gap-3 rounded-card border px-4 py-3">
+          <p className="text-heading text-sm">
+            <span className="font-semibold tabular-nums">{followUpTotal}</span>
+            {' '}learner{followUpTotal === 1 ? '' : 's'} need a next step today.
           </p>
+          <Link
+            to="/admin/follow-up"
+            className="text-primary text-sm font-semibold hover:underline"
+          >
+            Open follow-up
+          </Link>
         </div>
-        <Link
-          to="/admin/follow-up"
-          className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2 text-sm font-medium"
-        >
-          Morning follow-up
-        </Link>
-      </div>
+      ) : null}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <label className="sr-only" htmlFor="quiz-search">
