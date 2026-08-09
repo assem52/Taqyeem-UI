@@ -155,6 +155,15 @@ export default function LoginPage() {
           {isLoading ? 'Signing in…' : 'Sign in'}
         </button>
       </form>
+
+      {import.meta.env.DEV ? (
+        <p className="text-muted border-border mt-6 border-t pt-5 text-xs leading-relaxed">
+          Demo · learner{' '}
+          <span className="text-heading font-medium">assem.test@example.com</span> / Student123!
+          {' · '}admin{' '}
+          <span className="text-heading font-medium">admin@example.com</span> / Admin123!
+        </p>
+      ) : null}
     </AuthShell>
   );
 }
