@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-<<<<<<< HEAD
-import { useGetAttemptQuery, useGetStudentQuizQuery, useSaveAnswerMutation, useSubmitAttemptMutation } from '../studentQuizzesApi';
+import { useGetAttemptQuery, useGetStudentQuizQuery, useSaveAnswerMutation, useSubmitAttemptMutation, useRecordVisibilityLostMutation } from '../studentQuizzesApi';
 import MessagePage from '../../../shared/components/MessagePage';
 import { 
   ChevronLeft, 
@@ -22,6 +21,7 @@ export default function QuizAttemptPage() {
     const { data: quiz } = useGetStudentQuizQuery(quizId);
     const [saveAnswerMutation] = useSaveAnswerMutation();
     const [submitAttempt, { isLoading: isSubmitting, isError: isSubmitError }] = useSubmitAttemptMutation();
+    const [recordVisibilityLost] = useRecordVisibilityLostMutation();
     
     const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState({});
@@ -31,9 +31,11 @@ export default function QuizAttemptPage() {
     const [submissionScore, setSubmissionScore] = useState(null);
     const [isFlushing, setIsFlushing] = useState(false);
 
-    // Timer & Navigation Confirmation states
+    // Timer & Warning states
     const [secondsRemaining, setSecondsRemaining] = useState(null);
     const [isTimeUp, setIsTimeUp] = useState(false);
+    const [hasDismissedFiveMinWarning, setHasDismissedFiveMinWarning] = useState(false);
+    const [hasDismissedOneMinWarning, setHasDismissedOneMinWarning] = useState(false);
     const [showLeaveModal, setShowLeaveModal] = useState(false);
     const [showUnansweredModal, setShowUnansweredModal] = useState(false);
 
@@ -43,6 +45,8 @@ export default function QuizAttemptPage() {
     const isMounted = useRef(true);
     const hasAutoSubmittedRef = useRef(false);
     const attemptIdRef = useRef(attempt?.id);
+    const latestVisibilityEventRef = useRef(null);
+    const lastVisibilityStateRef = useRef(typeof document !== 'undefined' ? document.visibilityState : 'visible');
 
     useEffect(() => {
         attemptIdRef.current = attempt?.id;
@@ -89,6 +93,16 @@ export default function QuizAttemptPage() {
                     setTimeout(() => safeSetSaveStatus((prev) => (prev === 'Saved' ? '' : prev)), 2000);
                 } catch {
                     safeSetSaveStatus('Error saving');
+                    const originalSaved = attempt?.attemptAnswers?.[questionId]?.selectedOptionId;
+                    setAnswers((prev) => {
+                        const copy = { ...prev };
+                        if (originalSaved != null && originalSaved !== '') {
+                            copy[questionId] = originalSaved;
+                        } else {
+                            delete copy[questionId];
+                        }
+                        return copy;
+                    });
                 }
             }
         })();
@@ -177,51 +191,49 @@ export default function QuizAttemptPage() {
         }
     }, [attempt?.id, isSubmitting, isFlushing, flushPendingSaves, submitAttempt]);
 
-    const durationMins =
-        quiz?.durationMinutes ??
-        quiz?.duration ??
-        attempt?.quiz?.durationMinutes ??
-        attempt?.quiz?.duration;
-
-    const closesAt =
-        quiz?.closesAt ??
-        attempt?.quiz?.closesAt;
-
-    // Quiz Countdown Timer Calculation & Automatic Expiration Finalization
+    // Server-driven visual countdown timer (Prompt 1)
+    // The server-calculated attempt.remainingSeconds is the authoritative remaining time.
     useEffect(() => {
-        if (!attempt?.startedAt || attempt?.status !== 'IN_PROGRESS' || isSubmittedSuccessfully || !closesAt || durationMins == null) {
+        if (!attempt || attempt.status !== 'IN_PROGRESS' || attempt.remainingSeconds == null || isSubmittedSuccessfully) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setSecondsRemaining(null);
             return;
         }
 
-        const startTime = new Date(attempt.startedAt).getTime();
-        const durationEnd = startTime + durationMins * 60 * 1000;
-        const quizEnd = new Date(closesAt).getTime();
-        const endTime = Math.min(durationEnd, quizEnd);
+        setSecondsRemaining(attempt.remainingSeconds);
 
-        const updateTimer = () => {
-            if (!isMounted.current) return;
-            const now = Date.now();
-            const diffSeconds = Math.max(0, Math.floor((endTime - now) / 1000));
-            setSecondsRemaining(diffSeconds);
+        if (attempt.remainingSeconds <= 0) {
+            return;
+        }
 
-            if (diffSeconds <= 0) {
-                setIsTimeUp(true);
-                if (!hasAutoSubmittedRef.current) {
-                    hasAutoSubmittedRef.current = true;
-                    performSubmit();
+        const intervalId = setInterval(() => {
+            setSecondsRemaining((prev) => {
+                if (prev == null || prev <= 1) {
+                    clearInterval(intervalId);
+                    return 0;
                 }
-            }
-        };
-
-        updateTimer();
-        const intervalId = setInterval(updateTimer, 1000);
+                return prev - 1;
+            });
+        }, 1000);
 
         return () => {
             clearInterval(intervalId);
         };
-    }, [attempt?.startedAt, attempt?.status, durationMins, closesAt, isSubmittedSuccessfully, performSubmit]);
+    }, [attempt?.id, attempt?.status, attempt?.remainingSeconds, isSubmittedSuccessfully]);
+
+    // Prompt 7: Trigger auto-submit when server-derived countdown reaches zero
+    useEffect(() => {
+        if (
+            secondsRemaining === 0 &&
+            attempt?.status === 'IN_PROGRESS' &&
+            !isSubmittedSuccessfully &&
+            !hasAutoSubmittedRef.current
+        ) {
+            hasAutoSubmittedRef.current = true;
+            setIsTimeUp(true);
+            performSubmit();
+        }
+    }, [secondsRemaining, attempt?.status, isSubmittedSuccessfully, performSubmit]);
 
     // Unsaved Changes Browser BeforeUnload Guard
     useEffect(() => {
@@ -241,6 +253,45 @@ export default function QuizAttemptPage() {
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [saveStatus, attempt?.status, isSubmittedSuccessfully, isTimeUp]);
+
+    // Prompt 6: Send visibility loss event to Learner 5 integrity endpoint
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            const currentState = document.visibilityState;
+
+            if (
+                attemptIdRef.current &&
+                attempt?.status === 'IN_PROGRESS' &&
+                !isSubmittedSuccessfully &&
+                !isTimeUp
+            ) {
+                if (currentState === 'hidden' && lastVisibilityStateRef.current !== 'hidden') {
+                    lastVisibilityStateRef.current = 'hidden';
+                    latestVisibilityEventRef.current = {
+                        type: 'hidden',
+                        timestamp: new Date().toISOString(),
+                        attemptId: attemptIdRef.current,
+                    };
+                    // Non-blocking call to Learner 5 integrity endpoint
+                    recordVisibilityLost(attemptIdRef.current).unwrap().catch(() => {
+                        // Integrity endpoint failures are handled non-blockingly and never interrupt quiz workflow
+                    });
+                } else if (currentState === 'visible' && lastVisibilityStateRef.current !== 'visible') {
+                    lastVisibilityStateRef.current = 'visible';
+                    latestVisibilityEventRef.current = {
+                        type: 'visible',
+                        timestamp: new Date().toISOString(),
+                        attemptId: attemptIdRef.current,
+                    };
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [attempt?.status, isSubmittedSuccessfully, isTimeUp, recordVisibilityLost]);
 
     useEffect(() => {
         if (attempt && !isRestored) {
@@ -304,9 +355,9 @@ export default function QuizAttemptPage() {
         setShowLeaveModal(true);
     };
 
-    const handleConfirmLeave = () => {
+    const handleConfirmLeave = async () => {
         setShowLeaveModal(false);
-        navigate('/');
+        await performSubmit();
     };
 
     const totalQuestions = attempt?.questions?.length ?? 0;
@@ -426,6 +477,22 @@ export default function QuizAttemptPage() {
 
     const isLowTime = secondsRemaining != null && secondsRemaining > 0 && secondsRemaining <= 300;
 
+    const isFiveMinWarning =
+        secondsRemaining !== null &&
+        secondsRemaining > 60 &&
+        secondsRemaining <= 300 &&
+        attempt?.status === 'IN_PROGRESS' &&
+        !isSubmittedSuccessfully &&
+        !hasDismissedFiveMinWarning;
+
+    const isOneMinWarning =
+        secondsRemaining !== null &&
+        secondsRemaining > 0 &&
+        secondsRemaining <= 60 &&
+        attempt?.status === 'IN_PROGRESS' &&
+        !isSubmittedSuccessfully &&
+        !hasDismissedOneMinWarning;
+
     const renderQuestionOptions = (question) => {
         const rawOpts = question.options;
         const opts = (rawOpts && rawOpts.length > 0)
@@ -483,8 +550,8 @@ export default function QuizAttemptPage() {
                         </div>
                         <p className="text-body text-sm mb-6 leading-relaxed">
                             {saveStatus === 'Saving...' || saveStatus === 'Retrying...'
-                                ? 'You have answers currently being saved. Any unsaved answer changes will be lost if you leave right now.'
-                                : 'Are you sure you want to leave the active quiz? Your timer will pause and resume when you return.'}
+                                ? 'You have answers currently being saved. Unsaved changes will be submitted as-is if you exit now.'
+                                : 'Are you sure you want to exit and submit your quiz? Your attempt will be finalized using your last saved answers, and you will not be able to re-enter.'}
                         </p>
                         <div className="flex items-center justify-end gap-3">
                             <button
@@ -492,14 +559,14 @@ export default function QuizAttemptPage() {
                                 onClick={() => setShowLeaveModal(false)}
                                 className="border-border text-heading hover:bg-background rounded-button border px-4 py-2 text-sm font-medium transition-colors"
                             >
-                                Stay & Resume
+                                Cancel & Stay
                             </button>
                             <button
                                 type="button"
                                 onClick={handleConfirmLeave}
                                 className="bg-danger hover:bg-danger/90 text-white rounded-button px-4 py-2 text-sm font-semibold transition-colors shadow-sm"
                             >
-                                Leave Quiz
+                                Exit & Submit Quiz
                             </button>
                         </div>
                     </div>
@@ -613,7 +680,7 @@ export default function QuizAttemptPage() {
                     </div>
 
                     <div className="bg-background text-heading flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs font-semibold shadow-sm">
-                        <span>Question {currentIndex + 1} of {totalQuestions}</span>
+                        <span>Question {currentIndex + 1} of {totalQuestions} · Answered {answeredCount}/{totalQuestions}</span>
                     </div>
                 </div>
             </header>
@@ -661,11 +728,29 @@ export default function QuizAttemptPage() {
                             <span className="text-muted">Progress</span>
                             <span className="text-primary">{progressPercentage}% Completed</span>
                         </div>
-                        <div className="w-full bg-border h-2 rounded-full overflow-hidden">
+                        <div className="w-full bg-border h-2 rounded-full overflow-hidden mb-4">
                             <div 
                                 className="bg-primary h-full transition-all duration-300 ease-out rounded-full"
                                 style={{ width: `${progressPercentage}%` }}
                             />
+                        </div>
+
+                        {/* Answered / Unanswered Progress Breakdown (Prompt 4) */}
+                        <div className="space-y-2 pt-2 border-t border-border/60 text-xs font-medium">
+                            <div className="flex items-center justify-between">
+                                <span className="text-muted flex items-center gap-1.5">
+                                    <span className="h-2 w-2 rounded-full bg-success inline-block"></span>
+                                    Answered:
+                                </span>
+                                <span className="font-bold text-heading">{answeredCount} / {totalQuestions}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-muted flex items-center gap-1.5">
+                                    <span className="h-2 w-2 rounded-full bg-amber-500 inline-block"></span>
+                                    Unanswered:
+                                </span>
+                                <span className="font-bold text-amber-600 dark:text-amber-400">{unansweredCount}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -687,6 +772,56 @@ export default function QuizAttemptPage() {
                 <main className="flex-1 overflow-y-auto p-4 sm:p-8 flex justify-center">
                     <div className="w-full max-w-3xl flex flex-col justify-between min-h-[500px]">
                         <div>
+                            {/* 5-Minute Time Warning Banner (Prompt 2) */}
+                            {isFiveMinWarning && (
+                                <div
+                                    role="alert"
+                                    className="bg-amber-500/10 border border-amber-500/30 text-heading rounded-card p-4 mb-6 shadow-soft flex items-center justify-between gap-4 transition-all"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <Clock size={20} className="text-amber-600 dark:text-amber-400 shrink-0" />
+                                        <div>
+                                            <h4 className="font-bold text-sm text-heading">5 Minutes Remaining</h4>
+                                            <p className="text-xs text-muted mt-0.5">
+                                                You have 5 minutes remaining. Please review your answers before submitting.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setHasDismissedFiveMinWarning(true)}
+                                        className="text-xs font-semibold text-muted hover:text-heading border border-border bg-surface px-3 py-1.5 rounded-button hover:bg-background transition-colors shrink-0"
+                                    >
+                                        Dismiss
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* 1-Minute Critical Time Warning Banner (Prompt 3) */}
+                            {isOneMinWarning && (
+                                <div
+                                    role="alert"
+                                    className="bg-danger/10 border border-danger/30 text-heading rounded-card p-4 mb-6 shadow-soft flex items-center justify-between gap-4 transition-all animate-pulse"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <AlertCircle size={20} className="text-danger shrink-0" />
+                                        <div>
+                                            <h4 className="font-bold text-sm text-heading text-danger">1 Minute Remaining</h4>
+                                            <p className="text-xs text-muted mt-0.5">
+                                                Less than 1 minute remaining! Finalize your answers and prepare to submit.
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setHasDismissedOneMinWarning(true)}
+                                        className="text-xs font-semibold text-muted hover:text-heading border border-border bg-surface px-3 py-1.5 rounded-button hover:bg-background transition-colors shrink-0"
+                                    >
+                                        Dismiss
+                                    </button>
+                                </div>
+                            )}
+
                             {/* Time is Up Warning Banner */}
                             {isTimeUp && (
                                 <div className="bg-danger/10 border border-danger/30 text-heading rounded-card p-5 sm:p-6 mb-6 shadow-soft flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -809,635 +944,5 @@ export default function QuizAttemptPage() {
             </div>
         </div>
     );
-=======
-import {
-  useGetAttemptQuery,
-  useGetStudentQuizQuery,
-  useSaveAnswerMutation,
-  useSubmitAttemptMutation,
-  useRecordVisibilityLostMutation,
-} from '../studentQuizzesApi';
-import MessagePage from '../../../shared/components/MessagePage';
-import ConfirmModal from '../../../shared/components/ConfirmModal';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Save,
-  CheckCircle2,
-  AlertCircle,
-  Loader2,
-  Clock,
-} from '../../../shared/components/Icons';
-
-function formatCountdown(totalSeconds) {
-  const safe = Math.max(0, totalSeconds);
-  const minutes = Math.floor(safe / 60);
-  const seconds = safe % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-export default function QuizAttemptPage() {
-  const { quizId } = useParams();
-  const navigate = useNavigate();
-  const { data: attempt, isLoading, isError } = useGetAttemptQuery(quizId);
-  const { data: quiz } = useGetStudentQuizQuery(quizId);
-  const [saveAnswerMutation] = useSaveAnswerMutation();
-  const [submitAttempt, { isLoading: isSubmitting, isError: isSubmitError }] =
-    useSubmitAttemptMutation();
-  const [recordVisibilityLost] = useRecordVisibilityLostMutation();
-
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [saveStatus, setSaveStatus] = useState('');
-  const [isRestored, setIsRestored] = useState(false);
-  const [isFlushing, setIsFlushing] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState(null);
-
-  const debounceTimers = useRef({});
-  const pendingAnswers = useRef({});
-  const inFlightSaves = useRef({});
-  const isMounted = useRef(true);
-  const attemptIdRef = useRef(attempt?.id);
-  const autoSubmitFired = useRef(false);
-
-  useEffect(() => {
-    attemptIdRef.current = attempt?.id;
-  }, [attempt?.id]);
-
-  const safeSetSaveStatus = useCallback((updater) => {
-    if (isMounted.current) setSaveStatus(updater);
-  }, []);
-
-  const performSave = useCallback(
-    async (questionId, value) => {
-      const attemptId = attemptIdRef.current;
-      if (!attemptId) return;
-
-      const existingInFlight = inFlightSaves.current[questionId];
-      if (existingInFlight) {
-        try {
-          await existingInFlight;
-        } catch {
-          // Ignore previous failure; retry with latest value.
-        }
-      }
-
-      const isObject = value && typeof value === 'object';
-      const selectedOptionId = isObject
-        ? (value.selectedOptionId ?? null)
-        : value;
-      const textAnswer = isObject ? (value.textAnswer ?? null) : null;
-      const payload = isObject
-        ? { attemptId, questionId, selectedOptionId, textAnswer }
-        : { attemptId, questionId, selectedOptionId: value, textAnswer: null };
-
-      const savePromise = (async () => {
-        safeSetSaveStatus('Saving...');
-        try {
-          await saveAnswerMutation(payload).unwrap();
-          safeSetSaveStatus('Saved');
-          setTimeout(
-            () => safeSetSaveStatus((prev) => (prev === 'Saved' ? '' : prev)),
-            2000,
-          );
-        } catch {
-          safeSetSaveStatus('Retrying...');
-          try {
-            await saveAnswerMutation(payload).unwrap();
-            safeSetSaveStatus('Saved');
-            setTimeout(
-              () => safeSetSaveStatus((prev) => (prev === 'Saved' ? '' : prev)),
-              2000,
-            );
-          } catch {
-            safeSetSaveStatus('Error saving');
-          }
-        }
-      })();
-
-      inFlightSaves.current[questionId] = savePromise;
-      try {
-        await savePromise;
-      } finally {
-        delete inFlightSaves.current[questionId];
-      }
-    },
-    [saveAnswerMutation, safeSetSaveStatus],
-  );
-
-  const triggerSave = useCallback(
-    (questionId, value) => {
-      pendingAnswers.current[questionId] = value;
-      if (debounceTimers.current[questionId]) {
-        clearTimeout(debounceTimers.current[questionId]);
-        delete debounceTimers.current[questionId];
-      }
-      safeSetSaveStatus('Saving...');
-      debounceTimers.current[questionId] = setTimeout(async () => {
-        delete debounceTimers.current[questionId];
-        const val = pendingAnswers.current[questionId];
-        delete pendingAnswers.current[questionId];
-        if (val !== undefined) await performSave(questionId, val);
-      }, 500);
-    },
-    [performSave, safeSetSaveStatus],
-  );
-
-  const flushPendingSaves = useCallback(async () => {
-    const promises = [];
-    for (const qId of Object.keys(debounceTimers.current)) {
-      clearTimeout(debounceTimers.current[qId]);
-      delete debounceTimers.current[qId];
-      const value = pendingAnswers.current[qId];
-      delete pendingAnswers.current[qId];
-      if (value !== undefined) promises.push(performSave(qId, value));
-    }
-    for (const qId of Object.keys(pendingAnswers.current)) {
-      const value = pendingAnswers.current[qId];
-      delete pendingAnswers.current[qId];
-      if (value !== undefined) promises.push(performSave(qId, value));
-    }
-    const inFlightPromises = Object.values(inFlightSaves.current);
-    if (promises.length > 0 || inFlightPromises.length > 0) {
-      await Promise.all([...promises, ...inFlightPromises]);
-    }
-  }, [performSave]);
-
-  const runSubmit = useCallback(async () => {
-    const attemptId = attemptIdRef.current;
-    if (!attemptId || isSubmitting || isFlushing) return;
-    try {
-      setIsFlushing(true);
-      await flushPendingSaves();
-      await submitAttempt(attemptId).unwrap();
-      navigate(`/quizzes/${quizId}/results`, { replace: true });
-    } catch {
-      // isSubmitError renders the failure.
-    } finally {
-      if (isMounted.current) setIsFlushing(false);
-    }
-  }, [flushPendingSaves, isFlushing, isSubmitting, navigate, quizId, submitAttempt]);
-
-  useEffect(() => {
-    if (attempt && !isRestored) {
-      const restoredAnswers = {};
-      if (attempt.attemptAnswers && typeof attempt.attemptAnswers === 'object') {
-        for (const [qId, data] of Object.entries(attempt.attemptAnswers)) {
-          if (data?.textAnswer != null && data.textAnswer !== '') {
-            restoredAnswers[qId] = { textAnswer: data.textAnswer, selectedOptionId: null };
-          } else if (data?.selectedOptionId != null) {
-            restoredAnswers[qId] = data.selectedOptionId;
-          }
-        }
-      }
-      setAnswers(restoredAnswers);
-      if (attempt.questions?.length > 0) {
-        const firstUnanswered = attempt.questions.findIndex((q) => {
-          const value = restoredAnswers[q.id];
-          if (value == null) return true;
-          if (typeof value === 'object') return !(value.textAnswer || '').trim();
-          return value === '';
-        });
-        setCurrentIndex(
-          firstUnanswered !== -1 ? firstUnanswered : attempt.questions.length - 1,
-        );
-      }
-      if (typeof attempt.remainingSeconds === 'number') {
-        setRemainingSeconds(attempt.remainingSeconds);
-      }
-      setIsRestored(true);
-    }
-  }, [attempt, isRestored]);
-
-  useEffect(() => {
-    if (remainingSeconds == null || attempt?.status !== 'IN_PROGRESS') return undefined;
-    if (remainingSeconds <= 0) {
-      if (!autoSubmitFired.current) {
-        autoSubmitFired.current = true;
-        runSubmit();
-      }
-      return undefined;
-    }
-    const id = setInterval(() => {
-      setRemainingSeconds((prev) => (prev == null ? prev : Math.max(0, prev - 1)));
-    }, 1000);
-    return () => clearInterval(id);
-  }, [remainingSeconds, attempt?.status, runSubmit]);
-
-  useEffect(() => {
-    if (!attempt?.id || attempt.status !== 'IN_PROGRESS') return undefined;
-    const onVisibility = () => {
-      if (document.hidden) {
-        recordVisibilityLost(attempt.id).catch(() => {});
-      }
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, [attempt?.id, attempt?.status, recordVisibilityLost]);
-
-  useEffect(() => {
-    isMounted.current = true;
-    const currentTimers = debounceTimers.current;
-    const currentPending = pendingAnswers.current;
-    return () => {
-      isMounted.current = false;
-      for (const qId of Object.keys(currentTimers)) {
-        clearTimeout(currentTimers[qId]);
-        delete currentTimers[qId];
-        const value = currentPending[qId];
-        delete currentPending[qId];
-        const attemptId = attemptIdRef.current;
-        if (value !== undefined && attemptId) {
-          const isObject = value && typeof value === 'object';
-          saveAnswerMutation(
-            isObject
-              ? {
-                  attemptId,
-                  questionId: qId,
-                  selectedOptionId: value.selectedOptionId ?? null,
-                  textAnswer: value.textAnswer ?? null,
-                }
-              : {
-                  attemptId,
-                  questionId: qId,
-                  selectedOptionId: value,
-                  textAnswer: null,
-                },
-          );
-        }
-      }
-    };
-  }, [saveAnswerMutation]);
-
-  if (isLoading || (attempt && !isRestored)) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background p-8">
-        <div className="flex flex-col items-center rounded-card border border-border bg-surface p-12 shadow-soft">
-          <Loader2 size={36} className="mb-3 text-primary" />
-          <p className="text-sm font-medium text-heading">Loading attempt…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (
-    attempt?.status === 'SUBMITTED' ||
-    attempt?.status === 'AUTO_SUBMITTED'
-  ) {
-    return (
-      <MessagePage
-        icon={CheckCircle2}
-        title="Here’s how you did"
-        description="This quiz is already submitted. Open your results to see your score."
-        buttonText="View results"
-        buttonLink={`/quizzes/${quizId}/results`}
-      />
-    );
-  }
-
-  if (isError) {
-    return (
-      <MessagePage
-        icon={AlertCircle}
-        title="Unable to load attempt"
-        description="There was a problem loading your quiz attempt. Please try again later."
-        buttonText="Back to Dashboard"
-      />
-    );
-  }
-
-  if (!attempt || !attempt.questions || attempt.questions.length === 0) {
-    return (
-      <MessagePage
-        icon={AlertCircle}
-        title="No questions found"
-        description="This quiz currently has no questions."
-        buttonText="Back to Dashboard"
-      />
-    );
-  }
-
-  const questions = attempt.questions;
-  const currentQuestion = questions[currentIndex];
-  const totalQuestions = questions.length;
-
-  const isAnsweredValue = (value) => {
-    if (value == null || value === '') return false;
-    if (typeof value === 'object') return Boolean((value.textAnswer || '').trim());
-    return true;
-  };
-
-  const unansweredCount = questions.filter((q) => !isAnsweredValue(answers[q.id])).length;
-  const answeredCount = totalQuestions - unansweredCount;
-  const progressPercentage = Math.round((answeredCount / totalQuestions) * 100);
-
-  const handleOptionSelect = (questionId, optionId) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: optionId }));
-    triggerSave(questionId, optionId);
-  };
-
-  const handleTextChange = (questionId, text) => {
-    const payload = { selectedOptionId: null, textAnswer: text };
-    setAnswers((prev) => ({ ...prev, [questionId]: payload }));
-    triggerSave(questionId, payload);
-  };
-
-  const openSubmitConfirm = () => setConfirmOpen(true);
-
-  const renderQuestionOptions = (question) => {
-    const opts = question.options || [];
-    if (!opts.length) {
-      return (
-        <p className="rounded-button border border-warning/20 bg-warning/10 p-4 text-sm font-medium text-warning">
-          This question has no answer options configured.
-        </p>
-      );
-    }
-    return opts.map((opt) => {
-      const optValue = opt.id;
-      const optLabel = opt.option || opt.text || opt.label;
-      const isSelected = answers[question.id] === optValue;
-      return (
-        <label
-          key={optValue}
-          className={`flex cursor-pointer items-center gap-4 rounded-button border p-4 transition-all duration-200 ${
-            isSelected
-              ? 'border-primary bg-primary/5 font-medium text-heading ring-1 ring-primary/30'
-              : 'border-border bg-surface text-body hover:bg-background'
-          }`}
-        >
-          <input
-            type="radio"
-            name={`question-${question.id}`}
-            className="h-4 w-4 accent-primary"
-            checked={isSelected}
-            onChange={() => handleOptionSelect(question.id, optValue)}
-          />
-          <span className="text-sm">{optLabel}</span>
-        </label>
-      );
-    });
-  };
-
-  const timerUrgent = remainingSeconds != null && remainingSeconds <= 60;
-
-  return (
-    <div className="flex min-h-screen flex-col bg-background font-sans">
-      <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b border-border bg-surface px-4 shadow-sm sm:px-8">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white">
-            T
-          </div>
-          <h1 className="hidden max-w-md truncate text-base font-semibold text-heading sm:block">
-            {quiz?.title || 'Quiz Attempt'}
-          </h1>
-        </div>
-
-        <div className="flex items-center gap-4 text-sm font-medium">
-          {saveStatus === 'Saving...' && (
-            <span className="inline-flex animate-pulse items-center text-xs text-muted">
-              <Save size={14} className="mr-1.5" />
-              Saving...
-            </span>
-          )}
-          {saveStatus === 'Saved' && (
-            <span className="inline-flex items-center text-xs font-medium text-success">
-              <CheckCircle2 size={14} className="mr-1.5" />
-              Saved
-            </span>
-          )}
-          {(saveStatus === 'Error saving' || saveStatus === 'Retrying...') && (
-            <span className="inline-flex items-center text-xs font-medium text-danger">
-              <AlertCircle size={14} className="mr-1.5" />
-              {saveStatus}
-            </span>
-          )}
-
-          {remainingSeconds != null && (
-            <div
-              className={`flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold tabular-nums ${
-                timerUrgent
-                  ? 'border-danger/30 bg-danger/10 text-danger'
-                  : 'border-border bg-background text-heading'
-              }`}
-              role="timer"
-              aria-live={timerUrgent ? 'assertive' : 'polite'}
-              aria-atomic="true"
-              aria-label={`Time remaining ${formatCountdown(remainingSeconds)}`}
-            >
-              <Clock size={12} aria-hidden="true" />
-              <span>{formatCountdown(remainingSeconds)}</span>
-            </div>
-          )}
-
-          <div className="flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold text-heading shadow-sm">
-            <span>
-              {answeredCount}/{totalQuestions} answered
-            </span>
-          </div>
-        </div>
-      </header>
-
-      <div className="h-1 w-full shrink-0 bg-border">
-        <div
-          className="h-full bg-primary transition-all duration-300 ease-in-out"
-          style={{ width: `${progressPercentage}%` }}
-        />
-      </div>
-
-      <div className="flex flex-1 overflow-hidden">
-        <aside className="hidden w-72 shrink-0 overflow-y-auto border-r border-border bg-surface p-6 lg:block">
-          <h3 className="mb-4 text-sm font-semibold text-heading">Question Navigator</h3>
-          <div className="grid grid-cols-5 gap-2">
-            {questions.map((q, idx) => {
-              const isCurrent = idx === currentIndex;
-              const answered = isAnsweredValue(answers[q.id]);
-              return (
-                <button
-                  key={q.id || idx}
-                  type="button"
-                  onClick={() => setCurrentIndex(idx)}
-                  className={`flex h-10 w-10 items-center justify-center rounded-lg border text-xs font-semibold transition-all ${
-                    isCurrent
-                      ? 'border-primary bg-primary/10 text-primary ring-2 ring-primary/30'
-                      : answered
-                        ? 'border-success/30 bg-success/15 text-success'
-                        : 'border-border bg-surface text-muted hover:bg-background'
-                  }`}
-                >
-                  {idx + 1}
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            type="button"
-            onClick={openSubmitConfirm}
-            disabled={isSubmitting || isFlushing}
-            className="mt-8 inline-flex w-full items-center justify-center rounded-button bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-soft hover:bg-primary-hover disabled:opacity-50"
-          >
-            {isSubmitting || isFlushing ? 'Submitting...' : 'Submit quiz'}
-          </button>
-          {isSubmitError && (
-            <p className="mt-2 text-center text-xs font-medium text-danger">
-              Failed to submit. Please try again.
-            </p>
-          )}
-        </aside>
-
-        <main className="flex flex-1 justify-center overflow-y-auto p-4 pb-28 sm:p-8 sm:pb-28">
-          <div className="flex w-full max-w-3xl flex-col justify-between min-h-[500px]">
-            <div>
-              <div className="mb-6 lg:hidden">
-                <div className="mb-2 flex items-center justify-between text-xs font-semibold">
-                  <span className="text-muted">
-                    Question {currentIndex + 1} of {totalQuestions}
-                  </span>
-                  <span className="text-primary">{progressPercentage}% answered</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-border">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${progressPercentage}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="mb-6 rounded-card border border-border bg-surface p-6 shadow-soft sm:p-8">
-                <span className="mb-4 inline-block rounded-md bg-primary/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-primary">
-                  Question {currentIndex + 1}
-                </span>
-                <h2 className="mb-6 text-lg font-bold leading-snug text-heading sm:text-xl">
-                  {currentQuestion.text}
-                </h2>
-                <div className="space-y-3">
-                  {currentQuestion.type === 'MCQ' ||
-                  currentQuestion.type === 'TRUE_FALSE' ? (
-                    renderQuestionOptions(currentQuestion)
-                  ) : currentQuestion.type === 'OPEN_ENDED' ? (
-                    <textarea
-                      className="w-full rounded-input border border-border bg-background p-4 text-sm text-heading shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      rows={5}
-                      placeholder="Type your answer here..."
-                      value={
-                        typeof answers[currentQuestion.id] === 'object'
-                          ? answers[currentQuestion.id]?.textAnswer || ''
-                          : answers[currentQuestion.id] || ''
-                      }
-                      onChange={(e) =>
-                        handleTextChange(currentQuestion.id, e.target.value)
-                      }
-                    />
-                  ) : (
-                    <p className="rounded-button border border-warning/20 bg-warning/10 p-4 text-sm font-medium text-warning">
-                      Unsupported question type.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 flex items-center justify-between border-t border-border pt-6">
-              <button
-                type="button"
-                onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
-                disabled={currentIndex === 0 || isSubmitting || isFlushing}
-                className="inline-flex items-center rounded-button border border-border bg-surface px-5 py-2.5 text-sm font-medium text-body hover:bg-background disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <ChevronLeft size={16} className="mr-1.5" />
-                Previous
-              </button>
-
-              {currentIndex < totalQuestions - 1 ? (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCurrentIndex((i) => Math.min(totalQuestions - 1, i + 1))
-                  }
-                  disabled={isSubmitting || isFlushing}
-                  className="inline-flex items-center rounded-button bg-primary px-6 py-2.5 text-sm font-medium text-white shadow-soft hover:bg-primary-hover disabled:opacity-50"
-                >
-                  Next
-                  <ChevronRight size={16} className="ml-1.5" />
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={openSubmitConfirm}
-                  disabled={isSubmitting || isFlushing}
-                  className="inline-flex items-center rounded-button bg-success px-6 py-2.5 text-sm font-medium text-white shadow-soft disabled:opacity-50"
-                >
-                  {(isSubmitting || isFlushing) && (
-                    <Loader2 size={16} className="mr-2" />
-                  )}
-                  Submit quiz
-                </button>
-              )}
-            </div>
-          </div>
-        </main>
-      </div>
-
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface p-3 lg:hidden">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          {remainingSeconds != null ? (
-            <div
-              className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold tabular-nums ${
-                timerUrgent
-                  ? 'border-danger/30 bg-danger/10 text-danger'
-                  : 'border-border bg-background text-heading'
-              }`}
-              role="timer"
-              aria-live={timerUrgent ? 'assertive' : 'off'}
-              aria-label={`Time remaining ${formatCountdown(remainingSeconds)}`}
-            >
-              <Clock size={12} aria-hidden="true" />
-              {formatCountdown(remainingSeconds)}
-            </div>
-          ) : (
-            <span className="text-xs text-muted">
-              {answeredCount}/{totalQuestions} answered
-            </span>
-          )}
-          <span className="text-xs font-medium text-muted">
-            Q{currentIndex + 1}/{totalQuestions}
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={openSubmitConfirm}
-          disabled={isSubmitting || isFlushing}
-          className="inline-flex w-full items-center justify-center rounded-button bg-primary px-4 py-3 text-sm font-semibold text-white shadow-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
-        >
-          {isSubmitting || isFlushing ? 'Submitting…' : 'Submit quiz'}
-        </button>
-        {isSubmitError ? (
-          <p className="mt-2 text-center text-xs font-medium text-danger">
-            Failed to submit. Please try again.
-          </p>
-        ) : null}
-      </div>
-
-      <ConfirmModal
-        open={confirmOpen}
-        title="Submit this quiz?"
-        description={
-          unansweredCount > 0
-            ? `You still have ${unansweredCount} unanswered question${unansweredCount === 1 ? '' : 's'}. Submit anyway?`
-            : 'You can submit now. You won’t be able to change answers after this.'
-        }
-        confirmLabel="Submit quiz"
-        confirmTone="success"
-        busy={isSubmitting || isFlushing}
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={() => {
-          setConfirmOpen(false);
-          runSubmit();
-        }}
-      />
-    </div>
-  );
->>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
-}

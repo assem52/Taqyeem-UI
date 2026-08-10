@@ -30,8 +30,6 @@ export const authApi = baseApi.injectEndpoints({
         body,
       }),
     }),
-<<<<<<< HEAD
-=======
     forgotPassword: builder.mutation({
       query: (body) => ({
         url: '/auth/forgot-password',
@@ -46,7 +44,6 @@ export const authApi = baseApi.injectEndpoints({
         body,
       }),
     }),
->>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
     getMe: builder.query({
       query: () => '/auth/me',
     }),
@@ -64,11 +61,8 @@ export const {
   useRegisterMutation,
   useVerifyEmailMutation,
   useResendVerificationMutation,
-<<<<<<< HEAD
-=======
   useForgotPasswordMutation,
   useResetPasswordMutation,
->>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
   useGetMeQuery,
   useAcceptInvitationMutation,
 } = authApi;

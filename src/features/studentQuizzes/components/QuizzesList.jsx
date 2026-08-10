@@ -1,17 +1,14 @@
 import { useState } from 'react';
 import { useGetStudentQuizzesQuery } from '../studentQuizzesApi';
 import QuizCard from './QuizCard';
-<<<<<<< HEAD
-import { Loader2, AlertCircle, HelpCircle, Search } from '../../../shared/components/Icons';
+import { Loader2, HelpCircle, Search } from '../../../shared/components/Icons';
 
 export default function QuizzesList({ searchTerm: propSearchTerm, onSearchChange: propOnSearchChange }) {
   const [internalSearchTerm, setInternalSearchTerm] = useState('');
   
   const searchTerm = propSearchTerm !== undefined ? propSearchTerm : internalSearchTerm;
   const setSearchTerm = propOnSearchChange || setInternalSearchTerm;
-=======
-import { Loader2 } from '../../../shared/components/Icons';
->>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
+
 
   const { data, isLoading, isError } = useGetStudentQuizzesQuery();
 
@@ -36,7 +33,6 @@ import { Loader2 } from '../../../shared/components/Icons';
 
   if (quizzes.length === 0) {
     return (
-<<<<<<< HEAD
       <div className="bg-surface border border-border rounded-card p-12 text-center flex flex-col items-center justify-center shadow-soft">
         <div className="bg-primary/10 p-4 rounded-full text-primary mb-4">
           <HelpCircle size={36} />
@@ -44,13 +40,7 @@ import { Loader2 } from '../../../shared/components/Icons';
         <h3 className="text-lg font-semibold text-heading mb-1">No Quizzes Assigned</h3>
         <p className="text-sm text-muted max-w-md">
           {data?.message || "You currently have no quizzes assigned to your student account."}
-=======
-      <div className="border-border bg-surface rounded-card border px-5 py-12 text-center">
-        <h3 className="font-display text-heading text-lg">No quizzes yet</h3>
-        <p className="text-muted mx-auto mt-2 max-w-sm text-sm leading-relaxed">
-          {data?.message ||
-            'When an instructor invites you, quizzes will show up here.'}
->>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
+
         </p>
       </div>
     );
@@ -65,7 +55,6 @@ import { Loader2 } from '../../../shared/components/Icons';
   });
 
   return (
-<<<<<<< HEAD
     <div className="space-y-6 font-sans">
       {/* Search Bar Component */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
@@ -126,14 +115,6 @@ import { Loader2 } from '../../../shared/components/Icons';
         </ul>
       )}
     </div>
-=======
-    <ul className="grid list-none grid-cols-1 gap-4 p-0 md:grid-cols-2 lg:grid-cols-3">
-      {quizzes.map((quiz) => (
-        <li key={quiz.quizId} className="h-full">
-          <QuizCard quiz={quiz} />
-        </li>
-      ))}
-    </ul>
->>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
+
   );
 }
