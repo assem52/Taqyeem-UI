@@ -1,40 +1,64 @@
+<<<<<<< HEAD
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useLoginMutation } from '../authApi';
 import { setAuthSession } from '../../../shared/utils/authSession';
+=======
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useLoginMutation } from "../authApi";
+import AuthShell, {
+  authFieldClass,
+  authLabelClass,
+  authPrimaryBtnClass,
+} from "../components/AuthShell";
+import { ShieldAlert, User } from "../../../shared/components/Icons";
+
+const DEMO_ACCOUNTS = {
+  student: {
+    label: "Student",
+    email: "assem.test@example.com",
+    password: "Student123!",
+  },
+  admin: {
+    label: "Admin",
+    email: "admin@example.com",
+    password: "Admin123!",
+  },
+};
+>>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
 
 function homeForRole(role) {
-  return role === 'ADMIN' ? '/admin/quizzes' : '/';
+  return role === "ADMIN" ? "/admin/quizzes" : "/";
 }
 
 function destinationForLogin(role, next) {
-  // Don't send admins into student-only deep links (and vice versa).
-  if (next?.startsWith('/admin')) {
-    return role === 'ADMIN' ? next : homeForRole(role);
+  if (next?.startsWith("/admin")) {
+    return role === "ADMIN" ? next : homeForRole(role);
   }
-  if (next?.startsWith('/invite') || next?.startsWith('/quizzes')) {
-    return role === 'STUDENT' ? next : homeForRole(role);
+  if (next?.startsWith("/invite") || next?.startsWith("/quizzes")) {
+    return role === "STUDENT" ? next : homeForRole(role);
   }
-  if (next) {
-    return next;
-  }
+  if (next) return next;
   return homeForRole(role);
 }
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
+  const [demoKey, setDemoKey] = useState(null);
 
   const dispatch = useDispatch();
   const [login, { isLoading }] = useLoginMutation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const next = searchParams.get('next');
+  const next = searchParams.get("next");
 
   useEffect(() => {
+<<<<<<< HEAD
     const token = localStorage.getItem('token');
     const role = localStorage.getItem('role');
     const status = localStorage.getItem('status');
@@ -44,14 +68,52 @@ export default function LoginPage() {
       } else {
         navigate(homeForRole(role), { replace: true });
       }
+=======
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+    if (token && role) {
+      navigate(destinationForLogin(role, next), { replace: true });
+>>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
     }
-  }, [navigate]);
+  }, [navigate, next]);
+
+  const completeLogin = async (loginEmail, loginPassword) => {
+    setErrorMsg("");
+
+    const response = await login({
+      email: loginEmail.trim().toLowerCase(),
+      password: loginPassword,
+    }).unwrap();
+
+    if (!response?.access_token) {
+      throw new Error(
+        "Login succeeded but no token was returned. Please try again.",
+      );
+    }
+
+    const role = response.role ?? response.user?.role ?? "STUDENT";
+    const status = response.status ?? response.user?.status;
+    localStorage.setItem("token", response.access_token);
+    localStorage.setItem("role", role);
+    if (status) localStorage.setItem("status", status);
+
+    if (role === "STUDENT" && status === "UNVERIFIED") {
+      const params = new URLSearchParams({
+        email: loginEmail.trim().toLowerCase(),
+      });
+      if (next) params.set("next", next);
+      navigate(`/verify?${params.toString()}`, { replace: true });
+      return;
+    }
+
+    navigate(destinationForLogin(role, next), { replace: true });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMsg('');
-
+    setDemoKey(null);
     try {
+<<<<<<< HEAD
       const response = await login({
         email: email.trim().toLowerCase(),
         password,
@@ -85,12 +147,45 @@ export default function LoginPage() {
       }
 
       navigate(destinationForLogin(role, next), { replace: true });
+=======
+      await completeLogin(email, password);
+>>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
     } catch (err) {
-      setErrorMsg(err?.data?.message || 'Invalid email or password. Please try again.');
+      setErrorMsg(
+        err?.data?.message ||
+          err?.message ||
+          "Invalid email or password. Please try again.",
+      );
     }
   };
 
+  const handleDemoLogin = async (key) => {
+    const account = DEMO_ACCOUNTS[key];
+    if (!account) return;
+    setDemoKey(key);
+    setEmail(account.email);
+    setPassword(account.password);
+    try {
+      await completeLogin(account.email, account.password);
+    } catch (err) {
+      setErrorMsg(
+        err?.data?.message ||
+          err?.message ||
+          "Demo login failed. Is the seed data loaded?",
+      );
+    } finally {
+      setDemoKey(null);
+    }
+  };
+
+  const registerHref = next
+    ? `/register?next=${encodeURIComponent(next)}`
+    : "/register";
+
+  const busy = isLoading || Boolean(demoKey);
+
   return (
+<<<<<<< HEAD
     <div style={{
       display: 'flex',
       justifyContent: 'center',
@@ -135,108 +230,125 @@ export default function LoginPage() {
               Demo: assem.test@example.com / Student123! · admin@example.com / Admin123!
             </p>
           )}
+=======
+    <AuthShell
+      title="Welcome back"
+      subtitle="Sign in with your learner or instructor account."
+      footer={
+        <>
+          No account?{" "}
+          <Link
+            to={registerHref}
+            className="text-primary font-semibold hover:underline"
+          >
+            Register
+          </Link>
+          {" · "}
+          <Link
+            to="/forgot-password"
+            className="text-primary font-semibold hover:underline"
+          >
+            Forgot password
+          </Link>
+        </>
+      }
+    >
+      {errorMsg ? (
+        <div
+          role="alert"
+          className="border-danger/20 bg-danger/5 text-danger mb-5 rounded-button border px-3.5 py-2.5 text-sm"
+        >
+          {errorMsg}
+        </div>
+      ) : null}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="login-email" className={authLabelClass}>
+            Email
+          </label>
+          <input
+            id="login-email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="name@example.com"
+            className={authFieldClass}
+          />
+>>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
         </div>
 
-        {errorMsg && (
-          <div style={{
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
-            color: '#991b1b',
-            padding: '10px 14px',
-            borderRadius: '8px',
-            marginBottom: '20px',
-            fontSize: '13px',
-            textAlign: 'center'
-          }}>
-            {errorMsg}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#334155', fontSize: '13px' }}>Email Address</label>
+        <div>
+          <label htmlFor="login-password" className={authLabelClass}>
+            Password
+          </label>
+          <div className="relative">
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="login-password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="name@example.com"
-              style={{
-                width: '100%',
-                padding: '12px 14px',
-                border: '1px solid #cbd5e1',
-                borderRadius: '8px',
-                outline: 'none',
-                fontSize: '14px',
-                boxSizing: 'border-box',
-                backgroundColor: '#f8fafc'
-              }}
+              placeholder="Your password"
+              className={`${authFieldClass} pr-16`}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((v) => !v)}
+              className="text-muted hover:text-heading absolute top-1/2 right-3 -translate-y-1/2 text-xs font-semibold"
+            >
+              {showPassword ? "Hide" : "Show"}
+            </button>
           </div>
+        </div>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#334155', fontSize: '13px' }}>Password</label>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                placeholder="Enter your password"
-                style={{
-                  width: '100%',
-                  padding: '12px 45px 12px 14px',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '8px',
-                  outline: 'none',
-                  fontSize: '14px',
-                  boxSizing: 'border-box',
-                  backgroundColor: '#f8fafc'
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontSize: '16px',
-                  color: '#64748b'
-                }}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
-            </div>
+        <button
+          type="submit"
+          disabled={busy}
+          className={`${authPrimaryBtnClass} mt-2`}
+        >
+          {isLoading && !demoKey ? "Signing in…" : "Sign in"}
+        </button>
+      </form>
+
+      {import.meta.env.DEV ? (
+        <div className="border-border mt-6 border-t pt-5">
+          <p className="text-muted mb-3 text-xs font-medium tracking-wide uppercase">
+            Quick login (dev)
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => handleDemoLogin("student")}
+              className="border-border bg-background hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-primary flex flex-col items-center gap-2 rounded-button border px-3 py-4 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span className="bg-primary/10 text-primary flex h-11 w-11 items-center justify-center rounded-full">
+                <User size={22} />
+              </span>
+              <span className="text-heading font-semibold">
+                {demoKey === "student" ? "Signing in…" : "Student"}
+              </span>
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => handleDemoLogin("admin")}
+              className="border-border bg-background hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-primary flex flex-col items-center gap-2 rounded-button border px-3 py-4 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span className="bg-primary/10 text-primary flex h-11 w-11 items-center justify-center rounded-full">
+                <ShieldAlert size={22} />
+              </span>
+              <span className="text-heading font-semibold">
+                {demoKey === "admin" ? "Signing in…" : "Admin"}
+              </span>
+            </button>
           </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            style={{
-              padding: '12px',
-              background: '#2563eb',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '15px',
-              marginTop: '10px',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
-            }}
-          >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-
-        <p style={{ marginTop: '20px', textAlign: 'center', fontSize: '13px', color: '#64748b' }}>
-          No account?{' '}
-          <Link to="/register" style={{ color: '#2563eb', fontWeight: 600 }}>Register</Link>
-        </p>
-      </div>
-    </div>
+        </div>
+      ) : null}
+    </AuthShell>
   );
 }

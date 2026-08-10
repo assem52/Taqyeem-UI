@@ -1,73 +1,56 @@
 import { Link } from 'react-router-dom';
 import StatusPill from './StatusPill';
 import { formatClosesAt } from '../../../shared/utils/formatDate';
-import { Clock, Calendar, PlayCircle } from '../../../shared/components/Icons';
 
 export default function QuizCard({ quiz }) {
+  const isSubmitted = quiz.studentState === 'Submitted';
 
   return (
-    <article className="bg-surface text-body rounded-card shadow-soft border-border border flex flex-col overflow-hidden transition-all duration-200 hover:shadow-md h-full">
-      {/* Card Header */}
-      <div className="flex flex-col space-y-1.5 p-6 pb-3">
-        <div className="flex items-start justify-between gap-3 mb-1">
+    <article className="border-border bg-surface hover:border-primary/25 flex h-full flex-col rounded-card border transition">
+      <div className="flex flex-1 flex-col p-5">
+        <div className="mb-3 flex items-start justify-between gap-3">
           <StatusPill state={quiz.studentState} />
-          {quiz.score != null && (
-            <span className="text-xs font-semibold text-heading bg-primary-soft text-primary px-2 py-0.5 rounded border border-primary/10">
-              Score: {quiz.score}
+          {quiz.score != null ? (
+            <span className="text-heading text-xs font-semibold tabular-nums">
+              {quiz.score}%
+              {quiz.passed === true ? ' · Passed' : quiz.passed === false ? ' · Not yet' : ''}
             </span>
-          )}
+          ) : null}
         </div>
-        <h2 className="text-heading font-semibold text-lg line-clamp-1 tracking-tight">{quiz.title}</h2>
-      </div>
 
-      {/* Card Body */}
-      <div className="p-6 pt-0 flex-1 flex flex-col justify-between">
+        <h2 className="font-display text-heading text-lg leading-snug tracking-tight">
+          {quiz.title}
+        </h2>
+
         {quiz.description ? (
-          <p className="line-clamp-2 text-sm text-muted mb-4 leading-relaxed">{quiz.description}</p>
-        ) : (
-          <p className="text-sm text-muted italic mb-4">No description provided.</p>
-        )}
+          <p className="text-muted mt-2 line-clamp-2 text-sm leading-relaxed">{quiz.description}</p>
+        ) : null}
 
-        <div className="flex flex-col gap-2 text-xs text-muted mt-auto pt-2 border-t border-border/50">
-          {quiz.durationMinutes != null && (
-            <div className="flex items-center gap-2">
-              <Clock size={14} className="text-muted/70 shrink-0" />
-              <span>Duration: {quiz.durationMinutes} minutes</span>
-            </div>
-          )}
-
-          {quiz.opensAt && (
-            <div className="flex items-center gap-2">
-              <Calendar size={14} className="text-muted/70 shrink-0" />
-              <span>Opens: {formatClosesAt(quiz.opensAt)}</span>
-            </div>
-          )}
-
-          {quiz.closesAt && (
-            <div className="flex items-center gap-2 text-danger">
-              <Calendar size={14} className="shrink-0" />
-              <span>Closes: {formatClosesAt(quiz.closesAt)}</span>
-            </div>
-          )}
+        <div className="text-muted mt-auto space-y-1 pt-5 text-xs">
+          {quiz.durationMinutes != null ? <p>{quiz.durationMinutes} min</p> : null}
+          {quiz.closesAt ? <p>Closes {formatClosesAt(quiz.closesAt)}</p> : null}
         </div>
       </div>
 
-      {/* Card Footer */}
-      <div className="bg-background/50 border-t border-border flex items-center justify-between p-4 px-6 gap-3">
+      <div className="border-border border-t px-5 py-3.5">
         {quiz.canStart ? (
           <Link
             to={`/quizzes/${quiz.quizId}`}
-            className="w-full inline-flex items-center justify-center whitespace-nowrap rounded-button text-sm font-medium transition-all duration-200 ease-out bg-primary text-surface hover:bg-primary-hover shadow-soft py-2 px-4"
+            className="bg-primary hover:bg-primary-hover inline-flex w-full items-center justify-center rounded-button py-2.5 text-sm font-semibold text-white"
           >
-            <PlayCircle size={16} className="mr-2" />
-            {quiz.studentState === 'In progress' ? 'Continue Quiz' : 'Start Quiz'}
+            {quiz.studentState === 'In progress' ? 'Continue quiz' : 'Start quiz'}
+          </Link>
+        ) : isSubmitted ? (
+          <Link
+            to={`/quizzes/${quiz.quizId}/results`}
+            className="border-border text-heading hover:bg-background inline-flex w-full items-center justify-center rounded-button border py-2.5 text-sm font-semibold"
+          >
+            View results
           </Link>
         ) : quiz.blockedReason ? (
-          <p className="text-xs font-medium text-warning bg-warning/10 p-2 px-3 rounded border border-warning/20 w-full text-center">
-            {quiz.blockedReason}
-          </p>
+          <p className="text-muted text-center text-xs leading-relaxed">{quiz.blockedReason}</p>
         ) : (
-          <span className="text-xs text-muted italic">Quiz unavailable</span>
+          <p className="text-muted text-center text-xs">Unavailable</p>
         )}
       </div>
     </article>

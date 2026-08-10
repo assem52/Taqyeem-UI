@@ -246,6 +246,7 @@ export default function AppHeader({ searchTerm = '', onSearchChange }) {
           title={studentName || 'User Profile'}
         >
           {avatarInitials}
+
         </div>
       </div>
     </header>

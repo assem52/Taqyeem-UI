@@ -3,7 +3,7 @@ import { FOLLOW_UP_REASON } from '../../../shared/models/dto/adminFollowUp.dto'
 const REASONS = [
   {
     reason: FOLLOW_UP_REASON.FLAGGED_FOR_REVIEW,
-    label: 'Flagged for review',
+    label: 'Needs review',
   },
   {
     reason: FOLLOW_UP_REASON.STARTED_NOT_SUBMITTED,
@@ -17,19 +17,25 @@ const REASONS = [
 export default function FollowUpSummary({ summary }) {
   return (
     <section aria-label="Follow-up summary" className="mb-8">
-      <div className="mb-3 rounded-lg bg-slate-900 p-4 text-white">
-        <p className="text-sm text-slate-300">Total requiring follow-up</p>
-        <p className="mt-1 text-3xl font-semibold">{summary?.total ?? 0}</p>
+      <div className="border-border bg-surface mb-4 flex items-end justify-between gap-4 rounded-card border px-5 py-4">
+        <div>
+          <p className="text-muted text-xs font-semibold tracking-wider uppercase">
+            Needs a next step
+          </p>
+          <p className="font-display text-heading mt-1 text-3xl tabular-nums">
+            {summary?.total ?? 0}
+          </p>
+        </div>
       </div>
 
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <dl className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
         {REASONS.map(({ reason, label }) => (
           <div
-            className="rounded-lg border border-slate-200 bg-white p-3"
+            className="border-border bg-surface rounded-card border px-3.5 py-3"
             key={reason}
           >
-            <dt className="text-xs font-medium text-slate-500">{label}</dt>
-            <dd className="mt-1 text-xl font-semibold text-slate-900">
+            <dt className="text-muted text-xs font-medium leading-snug">{label}</dt>
+            <dd className="font-display text-heading mt-1 text-xl tabular-nums">
               {summary?.byReason?.[reason] ?? 0}
             </dd>
           </div>
