@@ -43,8 +43,9 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
     const path = `${window.location.pathname}${window.location.search}`;
     localStorage.removeItem('token');
     localStorage.removeItem('role');
-    const next = encodeURIComponent(path || '/');
-    window.location.href = `/login?next=${next}`;
+    localStorage.removeItem('status');
+    localStorage.removeItem('email');
+    window.location.href = '/login';
   }
 
   return result;

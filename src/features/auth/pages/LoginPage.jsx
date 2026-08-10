@@ -1,3 +1,10 @@
+<<<<<<< HEAD
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { useLoginMutation } from '../authApi';
+import { setAuthSession } from '../../../shared/utils/authSession';
+=======
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useLoginMutation } from "../authApi";
@@ -20,6 +27,7 @@ const DEMO_ACCOUNTS = {
     password: "Admin123!",
   },
 };
+>>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
 
 function homeForRole(role) {
   return role === "ADMIN" ? "/admin/quizzes" : "/";
@@ -43,16 +51,29 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [demoKey, setDemoKey] = useState(null);
 
+  const dispatch = useDispatch();
   const [login, { isLoading }] = useLoginMutation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const next = searchParams.get("next");
 
   useEffect(() => {
+<<<<<<< HEAD
+    const token = localStorage.getItem('token');
+    const role = localStorage.getItem('role');
+    const status = localStorage.getItem('status');
+    if (token && role) {
+      if (role === 'STUDENT' && status === 'UNVERIFIED') {
+        navigate('/verify-email', { replace: true });
+      } else {
+        navigate(homeForRole(role), { replace: true });
+      }
+=======
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
     if (token && role) {
       navigate(destinationForLogin(role, next), { replace: true });
+>>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
     }
   }, [navigate, next]);
 
@@ -92,7 +113,43 @@ export default function LoginPage() {
     e.preventDefault();
     setDemoKey(null);
     try {
+<<<<<<< HEAD
+      const response = await login({
+        email: email.trim().toLowerCase(),
+        password,
+      }).unwrap();
+
+      if (!response || !response.access_token) {
+        setErrorMsg('Login succeeded but no token was returned. Please try again.');
+        return;
+      }
+
+      const role = response.role ?? response.user?.role ?? 'STUDENT';
+      const status = response.status ?? response.user?.status ?? 'UNVERIFIED';
+      const userEmail = response.user?.email ?? response.email ?? email.trim().toLowerCase();
+      const userName = response.user?.name ?? response.name ?? '';
+
+      // Cleanly replace auth session and reset RTK query cache for new user
+      setAuthSession(
+        {
+          token: response.access_token,
+          role,
+          status,
+          email: userEmail,
+          name: userName,
+        },
+        dispatch
+      );
+
+      if (role === 'STUDENT' && status === 'UNVERIFIED') {
+        navigate('/verify-email', { replace: true });
+        return;
+      }
+
+      navigate(destinationForLogin(role, next), { replace: true });
+=======
       await completeLogin(email, password);
+>>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
     } catch (err) {
       setErrorMsg(
         err?.data?.message ||
@@ -128,6 +185,52 @@ export default function LoginPage() {
   const busy = isLoading || Boolean(demoKey);
 
   return (
+<<<<<<< HEAD
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      minHeight: '100vh',
+      backgroundColor: '#0f172a',
+      fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
+      padding: '20px'
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '420px',
+        padding: '40px 35px',
+        borderRadius: '16px',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3)',
+        background: '#ffffff',
+        boxSizing: 'border-box'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            backgroundColor: '#2563eb',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px auto',
+            color: '#fff',
+            fontSize: '22px',
+            fontWeight: 'bold',
+            boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)'
+          }}>
+            QP
+          </div>
+          <h2 style={{ margin: '0 0 8px 0', color: '#1e293b', fontSize: '24px', fontWeight: '700' }}>Welcome</h2>
+          <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>
+            Sign in — students and admins use the same login
+          </p>
+          {import.meta.env.DEV && (
+            <p style={{ margin: '10px 0 0', color: '#94a3b8', fontSize: '12px' }}>
+              Demo: assem.test@example.com / Student123! · admin@example.com / Admin123!
+            </p>
+          )}
+=======
     <AuthShell
       title="Welcome back"
       subtitle="Sign in with your learner or instructor account."
@@ -174,6 +277,7 @@ export default function LoginPage() {
             placeholder="name@example.com"
             className={authFieldClass}
           />
+>>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
         </div>
 
         <div>

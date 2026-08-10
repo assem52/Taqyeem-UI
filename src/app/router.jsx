@@ -15,6 +15,7 @@ import NotFound from "../shared/components/NotFound";
 import LoginPage from "../features/auth/pages/LoginPage";
 import RegisterPage from "../features/auth/pages/RegisterPage";
 import VerifyEmailPage from "../features/auth/pages/VerifyEmailPage";
+import { useGetMeQuery } from "../features/auth/authApi";
 import ForgotPasswordPage from "../features/auth/pages/ForgotPasswordPage";
 import ResetPasswordPage from "../features/auth/pages/ResetPasswordPage";
 import ProfilePage from "../features/auth/pages/ProfilePage";
@@ -25,6 +26,8 @@ function RequireAuth({ children }) {
   const token = localStorage.getItem('token');
   return token ? children : <Navigate to="/login" replace />;
 }
+
+/** Role gate — keeps students out of /admin, admins off student home, and unverified students on /verify-email */
 
 function RequireRole({ role, children }) {
   const token = localStorage.getItem('token');
@@ -55,14 +58,48 @@ function RequireRole({ role, children }) {
     );
   }
 
+  const { data: meData } = useGetMeQuery(undefined, { skip: !token });
+  if (meData?.status) {
+    localStorage.setItem('status', meData.status);
+    if (meData.email) localStorage.setItem('email', meData.email);
+  }
+
+  const currentStatus = meData?.status ?? localStorage.getItem('status');
+  if (role === 'STUDENT' && currentStatus === 'UNVERIFIED') {
+    return <Navigate to="/verify-email" replace />;
+  }
+
   return children;
+}
+
+function VerifyEmailGate() {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('role');
+
+  const { data: meData } = useGetMeQuery(undefined, { skip: !token });
+  if (meData?.status) {
+    localStorage.setItem('status', meData.status);
+    if (meData.email) localStorage.setItem('email', meData.email);
+  }
+
+  const currentStatus = meData?.status ?? localStorage.getItem('status');
+
+  if (token && role === 'STUDENT' && currentStatus === 'VERIFIED') {
+    return <Navigate to="/" replace />;
+  }
+
+  if (token && role === 'ADMIN') {
+    return <Navigate to="/admin/quizzes" replace />;
+  }
+
+  return <VerifyEmailPage />;
 }
 
 export const router = createBrowserRouter([
   { path: '/welcome', element: <PitchLandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
-  { path: '/verify', element: <VerifyEmailPage /> },
+  { path: '/verify-email', element: <VerifyEmailGate /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
   {
