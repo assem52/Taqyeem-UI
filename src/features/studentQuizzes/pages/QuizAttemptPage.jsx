@@ -41,7 +41,6 @@ export default function QuizAttemptPage() {
     const inFlightSaves = useRef({});
     const isMounted = useRef(true);
     const hasAutoSubmittedRef = useRef(false);
-    const secondsRemainingRef = useRef(null);
     const attemptIdRef = useRef(attempt?.id);
 
     useEffect(() => {
@@ -164,9 +163,6 @@ export default function QuizAttemptPage() {
             setIsFlushing(true);
             await flushPendingSaves();
             const res = await submitAttempt(attemptId).unwrap();
-            if (attemptId) {
-                localStorage.removeItem(`attempt_paused_seconds_${attemptId}`);
-            }
             if (res) {
                 setSubmissionScore(res.score ?? res);
             }
@@ -184,52 +180,33 @@ export default function QuizAttemptPage() {
         quiz?.durationMinutes ??
         quiz?.duration ??
         attempt?.quiz?.durationMinutes ??
-        attempt?.quiz?.duration ??
-        60;
+        attempt?.quiz?.duration;
+
+    const closesAt =
+        quiz?.closesAt ??
+        attempt?.quiz?.closesAt;
 
     // Quiz Countdown Timer Calculation & Automatic Expiration Finalization
     useEffect(() => {
-        if (!attempt?.startedAt || attempt?.status !== 'IN_PROGRESS' || isSubmittedSuccessfully) {
+        if (!attempt?.startedAt || attempt?.status !== 'IN_PROGRESS' || isSubmittedSuccessfully || !closesAt || durationMins == null) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSecondsRemaining(null);
-            secondsRemainingRef.current = null;
             return;
         }
 
-        let initialRemainingSeconds = null;
-        if (attempt?.id) {
-            const savedData = localStorage.getItem(`attempt_paused_seconds_${attempt.id}`);
-            if (savedData) {
-                try {
-                    const parsed = JSON.parse(savedData);
-                    if (typeof parsed.remainingSeconds === 'number' && parsed.remainingSeconds > 0) {
-                        initialRemainingSeconds = parsed.remainingSeconds;
-                    }
-                } catch {
-                    // Ignore parsing error
-                }
-            }
-        }
-
-        let endTime;
-        if (initialRemainingSeconds !== null) {
-            endTime = Date.now() + initialRemainingSeconds * 1000;
-        } else {
-            const startTime = new Date(attempt.startedAt).getTime();
-            endTime = startTime + durationMins * 60 * 1000;
-        }
+        const startTime = new Date(attempt.startedAt).getTime();
+        const durationEnd = startTime + durationMins * 60 * 1000;
+        const quizEnd = new Date(closesAt).getTime();
+        const endTime = Math.min(durationEnd, quizEnd);
 
         const updateTimer = () => {
             if (!isMounted.current) return;
             const now = Date.now();
             const diffSeconds = Math.max(0, Math.floor((endTime - now) / 1000));
             setSecondsRemaining(diffSeconds);
-            secondsRemainingRef.current = diffSeconds;
 
             if (diffSeconds <= 0) {
                 setIsTimeUp(true);
-                if (attempt?.id) {
-                    localStorage.removeItem(`attempt_paused_seconds_${attempt.id}`);
-                }
                 if (!hasAutoSubmittedRef.current) {
                     hasAutoSubmittedRef.current = true;
                     performSubmit();
@@ -243,7 +220,7 @@ export default function QuizAttemptPage() {
         return () => {
             clearInterval(intervalId);
         };
-    }, [attempt?.id, attempt?.startedAt, attempt?.status, durationMins, isSubmittedSuccessfully, performSubmit]);
+    }, [attempt?.startedAt, attempt?.status, durationMins, closesAt, isSubmittedSuccessfully, performSubmit]);
 
     // Unsaved Changes Browser BeforeUnload Guard
     useEffect(() => {
@@ -327,12 +304,6 @@ export default function QuizAttemptPage() {
     };
 
     const handleConfirmLeave = () => {
-        if (attempt?.id && secondsRemainingRef.current != null && secondsRemainingRef.current > 0) {
-            localStorage.setItem(`attempt_paused_seconds_${attempt.id}`, JSON.stringify({
-                remainingSeconds: secondsRemainingRef.current,
-                pausedAt: Date.now(),
-            }));
-        }
         setShowLeaveModal(false);
         navigate('/');
     };

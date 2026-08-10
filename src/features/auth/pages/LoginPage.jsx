@@ -63,7 +63,7 @@ export default function LoginPage() {
       }
 
       const role = response.role ?? response.user?.role ?? 'STUDENT';
-      const status = response.status ?? response.user?.status ?? 'VERIFIED';
+      const status = response.status ?? response.user?.status ?? 'UNVERIFIED';
       const userEmail = response.user?.email ?? response.email ?? email.trim().toLowerCase();
       const userName = response.user?.name ?? response.name ?? '';
 
@@ -130,9 +130,11 @@ export default function LoginPage() {
           <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>
             Sign in — students and admins use the same login
           </p>
-          <p style={{ margin: '10px 0 0', color: '#94a3b8', fontSize: '12px' }}>
-            Demo: assem.test@example.com / Student123! · admin@example.com / Admin123!
-          </p>
+          {import.meta.env.DEV && (
+            <p style={{ margin: '10px 0 0', color: '#94a3b8', fontSize: '12px' }}>
+              Demo: assem.test@example.com / Student123! · admin@example.com / Admin123!
+            </p>
+          )}
         </div>
 
         {errorMsg && (
