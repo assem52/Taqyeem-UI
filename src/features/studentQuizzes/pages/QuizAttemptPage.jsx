@@ -195,6 +195,7 @@ export default function QuizAttemptPage() {
     // The server-calculated attempt.remainingSeconds is the authoritative remaining time.
     useEffect(() => {
         if (!attempt || attempt.status !== 'IN_PROGRESS' || attempt.remainingSeconds == null || isSubmittedSuccessfully) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSecondsRemaining(null);
             return;
         }

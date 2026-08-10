@@ -40,7 +40,6 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
       : args?.url?.includes('/auth/');
 
   if (result.error && result.error.status === 401 && !isAuthRequest) {
-    const path = `${window.location.pathname}${window.location.search}`;
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('status');

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import QuizzesList from '../components/QuizzesList';
 import { Link } from 'react-router-dom';
 import AppShell from '../../../shared/components/AppShell';

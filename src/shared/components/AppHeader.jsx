@@ -1,12 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { Search, Bell } from './Icons';
+import { Bell } from './Icons';
 import { clearAuthSession } from '../utils/authSession';
 import { useGetMeQuery } from '../../features/auth/authApi';
 import { useGetStudentQuizzesQuery } from '../../features/studentQuizzes/studentQuizzesApi';
 
-export function getInitials(name) {
+function getInitials(name) {
   if (!name || typeof name !== 'string') return '?';
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
@@ -18,7 +18,7 @@ export function getInitials(name) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-export function deriveNotifications(quizzes) {
+function deriveNotifications(quizzes) {
   if (!Array.isArray(quizzes) || quizzes.length === 0) {
     return [];
   }
@@ -86,7 +86,7 @@ export function deriveNotifications(quizzes) {
   return notifications;
 }
 
-export default function AppHeader({ searchTerm = '', onSearchChange }) {
+export default function AppHeader() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -104,8 +104,7 @@ export default function AppHeader({ searchTerm = '', onSearchChange }) {
   const studentName = me?.name || localStorage.getItem('name') || '';
   const avatarInitials = getInitials(studentName);
 
-  const quizzes = quizzesData?.quizzes ?? [];
-  const notifications = useMemo(() => deriveNotifications(quizzes), [quizzes]);
+  const notifications = useMemo(() => deriveNotifications(quizzesData?.quizzes ?? []), [quizzesData?.quizzes]);
   const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
 
   useEffect(() => {

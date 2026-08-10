@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useGetStudentQuizzesQuery } from '../studentQuizzesApi';
 import QuizCard from './QuizCard';
-import { Loader2, AlertCircle, HelpCircle, Search } from '../../../shared/components/Icons';
+import { Loader2, HelpCircle, Search } from '../../../shared/components/Icons';
 
 export default function QuizzesList({ searchTerm: propSearchTerm, onSearchChange: propOnSearchChange }) {
   const [internalSearchTerm, setInternalSearchTerm] = useState('');

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import {
@@ -27,7 +27,7 @@ export default function VerifyEmailPage() {
   const initialToken = searchParams.get('token') || '';
   const [email, setEmail] = useState(initialEmail);
   const [verificationToken, setVerificationToken] = useState(initialToken);
-  const [infoMsg, setInfoMsg] = useState(
+  const [infoMsg] = useState(
     location.state?.isJustRegistered
       ? 'Account created! A verification link has been sent to your email address.'
       : 'Please verify your email address to access student quizzes and dashboard.'
@@ -40,11 +40,11 @@ export default function VerifyEmailPage() {
   const [resendVerification, { isLoading: isResending }] = useResendVerificationMutation();
   const [verifyEmail, { isLoading: isVerifying }] = useVerifyEmailMutation();
 
-  useEffect(() => {
-    if (meData?.email) {
-      setEmail(meData.email);
-    }
-  }, [meData]);
+  const [prevMeEmail, setPrevMeEmail] = useState(meData?.email);
+  if (meData?.email && meData.email !== prevMeEmail) {
+    setPrevMeEmail(meData.email);
+    setEmail(meData.email);
+  }
 
   const handleResend = async (e) => {
     e.preventDefault();
