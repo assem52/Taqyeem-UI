@@ -25,12 +25,7 @@ export default function RegisterPage() {
 
     try {
       const result = await register({ name, email, password }).unwrap();
-<<<<<<< HEAD
-      const targetEmail = result.email || email.trim().toLowerCase();
-      navigate('/verify-email', {
-        state: { email: targetEmail, isJustRegistered: true },
-      });
-=======
+
       setSuccessMsg(
         result.message ||
           'Registered. Enter your verification code on the next screen.',
@@ -40,7 +35,6 @@ export default function RegisterPage() {
       });
       if (next) params.set('next', next);
       setTimeout(() => navigate(`/verify?${params.toString()}`), 900);
->>>>>>> 12f68d40c1a96f0d9726d37f4cc5c1af22f807b7
     } catch (err) {
       setErrorMsg(err?.data?.message || 'Registration failed.');
     }

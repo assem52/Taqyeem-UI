@@ -88,7 +88,8 @@ export default function AdminAttemptReviewPage() {
           <ul className="mt-2 space-y-1 text-sm text-muted">
             {data.integrity.events.map((event) => (
               <li key={event.id}>
-                {event.type} · {new Date(event.occurredAt).toLocaleString()}
+                {event.type === 'VISIBILITY_LOST' ? 'Visibility lost' : event.type} ·{' '}
+                {new Date(event.occurredAt).toLocaleString()}
               </li>
             ))}
           </ul>
