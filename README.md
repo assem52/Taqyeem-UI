@@ -17,24 +17,39 @@ Built with **React 19**, **Vite**, **Redux Toolkit Query**, **React Router**, an
 
 ## Screenshots
 
-> Drop final assets into `docs/screenshots/` (or your preferred path) and replace the markers.
+Assets live under [`docs/screenshots/`](docs/screenshots/).
 
-| | |
-| :--- | :--- |
-| **Login / verify** | `<!-- SCREENSHOT: auth-login -->` |
-| **Admin — quizzes** | `<!-- SCREENSHOT: admin-quizzes -->` |
-| **Admin — launch wizard** | `<!-- SCREENSHOT: admin-launch -->` |
-| **Admin — generate with AI** | `<!-- SCREENSHOT: admin-ai-generate -->` |
-| **Admin — alerts panel** | `<!-- SCREENSHOT: admin-alerts -->` |
-| **Admin — attempt review** | `<!-- SCREENSHOT: admin-attempt-review -->` |
-| **Learner — dashboard** | `<!-- SCREENSHOT: learner-dashboard -->` |
-| **Learner — in-attempt** | `<!-- SCREENSHOT: learner-attempt -->` |
+### Marketing
 
-Example once assets exist:
+![Landing page](docs/screenshots/Landing-page.png)
 
-```md
-![Admin quiz list](docs/screenshots/admin-quizzes.png)
-```
+![Landing page — product story](docs/screenshots/landing-page2.png)
+
+![Landing page — instructor value](docs/screenshots/landing-page-3.png)
+
+### Authentication
+
+![Login](docs/screenshots/login.png)
+
+### Administrator
+
+![Admin quiz catalog](docs/screenshots/admin-quizzes.png)
+
+![Generate with AI](docs/screenshots/Admin-generate-ai.png)
+
+![Submission alerts](docs/screenshots/notification-pane.png)
+
+![Attempt review](docs/screenshots/attempt-review.png)
+
+### Learner
+
+![Student dashboard](docs/screenshots/Student-dashboard.png)
+
+![Invitation gateway](docs/screenshots/student-invitaion.png)
+
+![Timed attempt](docs/screenshots/student-attempt.png)
+
+![In-app assistant](docs/screenshots/ai-chat.png)
 
 ---
 
