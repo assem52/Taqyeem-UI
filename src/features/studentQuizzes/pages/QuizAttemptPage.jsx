@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useGetAttemptQuery, useGetStudentQuizQuery, useSaveAnswerMutation, useSubmitAttemptMutation, useRecordVisibilityLostMutation } from '../studentQuizzesApi';
+import { useGetAttemptQuery, useGetStudentQuizQuery, useSaveAnswerMutation, useSubmitAttemptMutation, useRecordVisibilityLostMutation, useRecordCopyMutation, useRecordScreenshotMutation } from '../studentQuizzesApi';
 import MessagePage from '../../../shared/components/MessagePage';
 import { 
   ChevronLeft, 
@@ -22,7 +22,8 @@ export default function QuizAttemptPage() {
     const [saveAnswerMutation] = useSaveAnswerMutation();
     const [submitAttempt, { isLoading: isSubmitting, isError: isSubmitError }] = useSubmitAttemptMutation();
     const [recordVisibilityLost] = useRecordVisibilityLostMutation();
-
+    const [recordCopy] = useRecordCopyMutation();
+    const [recordScreenshot] = useRecordScreenshotMutation();
     const attemptId = attempt?.id;
     const attemptStatus = attempt?.status;
     const remainingSeconds = attempt?.remainingSeconds;
@@ -301,6 +302,46 @@ export default function QuizAttemptPage() {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, [attempt?.status, isSubmittedSuccessfully, isTimeUp, recordVisibilityLost]);
+    useEffect(() => {
+    if (
+        attempt?.status !== 'IN_PROGRESS' ||
+        isSubmittedSuccessfully ||
+        isTimeUp
+    ) {
+        return undefined;
+    }
+
+    const handleCopy = () => {
+        if (attemptIdRef.current) {
+            recordCopy(attemptIdRef.current).unwrap().catch(() => {});
+        }
+    };
+
+    const handleScreenshot = (event) => {
+        if (
+            (event.key === 'PrintScreen' || event.code === 'PrintScreen') &&
+            attemptIdRef.current
+        ) {
+            recordScreenshot(attemptIdRef.current).unwrap().catch(() => {});
+        }
+    };
+
+    document.addEventListener('copy', handleCopy);
+    window.addEventListener('keydown', handleScreenshot);
+    window.addEventListener('keyup', handleScreenshot);
+
+    return () => {
+        document.removeEventListener('copy', handleCopy);
+        window.removeEventListener('keydown', handleScreenshot);
+        window.removeEventListener('keyup', handleScreenshot);
+    };
+}, [
+    attempt?.status,
+    isSubmittedSuccessfully,
+    isTimeUp,
+    recordCopy,
+    recordScreenshot,
+]);
 
     useEffect(() => {
         if (attempt && !isRestored) {
