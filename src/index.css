@@ -140,40 +140,81 @@
   font-family: var(--font-display);
 }
 
-/* AI controls — stand out gently within dusty-mauve / off-white */
+/* AI Generate — flashy, but dialed one notch softer to sit nearer the UI */
 .ai-brand-icon {
   display: inline-block;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  filter: drop-shadow(0 0 0.28rem rgba(180, 80, 255, 0.35));
+  transition: transform 0.2s ease, filter 0.2s ease;
 }
 
 .ai-generate-btn {
-  border: 1px solid hsl(var(--primary) / 0.28);
-  background: hsl(var(--primary-soft));
-  color: hsl(var(--primary));
-  box-shadow: none;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(
+    115deg,
+    #6b2fd6 0%,
+    #8f3dff 40%,
+    #c44dff 72%,
+    #e078c8 100%
+  );
+  color: #fff;
+  box-shadow:
+    0 0 0 1px rgba(140, 60, 220, 0.18),
+    0 6px 16px rgba(110, 40, 180, 0.28),
+    0 0 18px rgba(190, 80, 255, 0.18);
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    transform 0.15s ease;
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.ai-generate-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    110deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.22) 48%,
+    transparent 72%
+  );
+  transform: translateX(-120%);
+  animation: ai-shimmer 3.4s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .ai-generate-btn:hover:not(:disabled) {
-  border-color: hsl(var(--primary) / 0.45);
-  background: hsl(var(--primary));
-  color: #fff;
   transform: translateY(-1px);
+  filter: saturate(1.06) brightness(1.03);
+  box-shadow:
+    0 0 0 1px rgba(200, 120, 255, 0.22),
+    0 8px 20px rgba(120, 50, 200, 0.34),
+    0 0 24px rgba(210, 100, 255, 0.26);
 }
 
 .ai-generate-btn:hover:not(:disabled) .ai-brand-icon {
-  transform: scale(1.04);
+  transform: scale(1.06) rotate(-4deg);
+  filter: drop-shadow(0 0 0.45rem rgba(255, 160, 255, 0.55));
 }
 
 .ai-generate-btn:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.99);
 }
 
 .ai-generate-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
+}
+
+@keyframes ai-shimmer {
+  0%,
+  60% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
 }
 
