@@ -362,7 +362,13 @@ export default function LaunchQuizWizardPage() {
               }}
               className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white"
             >
-              Open question bank
+              Open quiz questions
+            </Link>
+            <Link
+              to="/admin/question-bank"
+              className="border-border text-heading hover:bg-background rounded-button border px-4 py-2.5 text-sm font-medium"
+            >
+              Browse question bank
             </Link>
             <button
               type="button"

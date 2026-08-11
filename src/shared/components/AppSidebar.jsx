@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
+  BookOpen,
   ClipboardList,
   LogOut,
   User,
@@ -51,6 +52,7 @@ export default function AppSidebar({ variant = 'student' }) {
     variant === 'admin'
       ? pathname.startsWith('/admin/quizzes')
       : pathname === '/dashboard' || pathname === '/' || pathname.startsWith('/quizzes');
+  const bankActive = pathname.startsWith('/admin/question-bank');
   const coachActive = pathname.startsWith('/admin/follow-up');
   const profileActive = pathname === profile;
 
@@ -62,6 +64,14 @@ export default function AppSidebar({ variant = 'student' }) {
         icon={ClipboardList}
         isActive={quizzesActive}
       />
+      {variant === 'admin' ? (
+        <NavItem
+          to="/admin/question-bank"
+          label="Bank"
+          icon={BookOpen}
+          isActive={bankActive}
+        />
+      ) : null}
       {variant === 'admin' ? (
         <NavItem
           to="/admin/follow-up"

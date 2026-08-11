@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGetAdminQuizByIdQuery } from '../../adminQuizzes/adminQuizzesApi';
+import AddFromBankModal from '../components/AddFromBankModal';
 import DuplicateQuizButton from '../components/DuplicateQuizButton';
 import QuestionCard from '../components/QuestionCard';
 import QuestionForm from '../components/QuestionForm';
@@ -44,6 +45,7 @@ export default function QuestionBankPage() {
   const location = useLocation();
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [showBankPicker, setShowBankPicker] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [alert, setAlert] = useState(location.state?.notice || '');
   const [actionError, setActionError] = useState('');
@@ -178,8 +180,8 @@ export default function QuestionBankPage() {
 
   return (
     <AdminShell
-      title={quiz?.title || 'Questions'}
-      subtitle="Author multiple-choice and true/false questions for this quiz."
+      title={quiz?.title || 'Quiz questions'}
+      subtitle="Author questions for this quiz, or copy persistent items from the shared question bank."
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -189,6 +191,12 @@ export default function QuestionBankPage() {
           >
             {returnTo ? 'Continue launch' : 'Back to workspace'}
           </button>
+          <Link
+            to="/admin/question-bank"
+            className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2 text-sm font-medium"
+          >
+            Open bank
+          </Link>
           <DuplicateQuizButton
             quiz={quiz}
             onError={setActionError}
@@ -197,14 +205,24 @@ export default function QuestionBankPage() {
             Duplicate
           </DuplicateQuizButton>
           {!readOnly && (
-            <button
-              type="button"
-              onClick={openAddForm}
-              disabled={isMutating || isLoading}
-              className="bg-primary hover:bg-primary-hover rounded-button px-3.5 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              Add question
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setShowBankPicker(true)}
+                disabled={isMutating || isLoading}
+                className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2 text-sm font-medium disabled:opacity-50"
+              >
+                Add from bank
+              </button>
+              <button
+                type="button"
+                onClick={openAddForm}
+                disabled={isMutating || isLoading}
+                className="bg-primary hover:bg-primary-hover rounded-button px-3.5 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                Add question
+              </button>
+            </>
           )}
         </div>
       }
@@ -289,16 +307,25 @@ export default function QuestionBankPage() {
               <p className="text-muted mx-auto mt-2 max-w-sm text-sm">
                 {readOnly
                   ? 'This quiz has no active questions.'
-                  : 'Add the first multiple-choice or true/false question.'}
+                  : 'Add a new question, or copy ones from the shared question bank.'}
               </p>
               {!readOnly && !isAdding && (
-                <button
-                  type="button"
-                  onClick={openAddForm}
-                  className="bg-primary hover:bg-primary-hover mt-6 rounded-button px-4 py-2.5 text-sm font-semibold text-white"
-                >
-                  Add first question
-                </button>
+                <div className="mt-6 flex flex-wrap justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowBankPicker(true)}
+                    className="border-border text-heading hover:bg-background rounded-button border px-4 py-2.5 text-sm font-medium"
+                  >
+                    Add from bank
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openAddForm}
+                    className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white"
+                  >
+                    Add first question
+                  </button>
+                </div>
               )}
             </div>
           ) : (
@@ -321,6 +348,20 @@ export default function QuestionBankPage() {
             </ol>
           )}
         </div>
+      )}
+
+      {showBankPicker && !readOnly && (
+        <AddFromBankModal
+          quizId={quizId}
+          onClose={() => setShowBankPicker(false)}
+          onAdded={(count) => {
+            setAlert(
+              count === 1
+                ? '1 question copied from the bank.'
+                : `${count} questions copied from the bank.`,
+            );
+          }}
+        />
       )}
     </AdminShell>
   );
