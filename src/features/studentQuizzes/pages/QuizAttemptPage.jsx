@@ -22,6 +22,10 @@ export default function QuizAttemptPage() {
     const [saveAnswerMutation] = useSaveAnswerMutation();
     const [submitAttempt, { isLoading: isSubmitting, isError: isSubmitError }] = useSubmitAttemptMutation();
     const [recordVisibilityLost] = useRecordVisibilityLostMutation();
+
+    const attemptId = attempt?.id;
+    const attemptStatus = attempt?.status;
+    const remainingSeconds = attempt?.remainingSeconds;
     
     const [currentIndex, setCurrentIndex] = useState(0);
     const [answers, setAnswers] = useState({});
@@ -45,12 +49,17 @@ export default function QuizAttemptPage() {
     const isMounted = useRef(true);
     const hasAutoSubmittedRef = useRef(false);
     const attemptIdRef = useRef(attempt?.id);
+    const attemptAnswersRef = useRef(attempt?.attemptAnswers);
     const latestVisibilityEventRef = useRef(null);
     const lastVisibilityStateRef = useRef(typeof document !== 'undefined' ? document.visibilityState : 'visible');
 
     useEffect(() => {
         attemptIdRef.current = attempt?.id;
     }, [attempt?.id]);
+
+    useEffect(() => {
+        attemptAnswersRef.current = attempt?.attemptAnswers;
+    }, [attempt?.attemptAnswers]);
 
     const safeSetSaveStatus = useCallback((updater) => {
         if (isMounted.current) {
@@ -93,7 +102,7 @@ export default function QuizAttemptPage() {
                     setTimeout(() => safeSetSaveStatus((prev) => (prev === 'Saved' ? '' : prev)), 2000);
                 } catch {
                     safeSetSaveStatus('Error saving');
-                    const originalSaved = attempt?.attemptAnswers?.[questionId]?.selectedOptionId;
+                    const originalSaved = attemptAnswersRef.current?.[questionId]?.selectedOptionId;
                     setAnswers((prev) => {
                         const copy = { ...prev };
                         if (originalSaved != null && originalSaved !== '') {
@@ -194,15 +203,15 @@ export default function QuizAttemptPage() {
     // Server-driven visual countdown timer (Prompt 1)
     // The server-calculated attempt.remainingSeconds is the authoritative remaining time.
     useEffect(() => {
-        if (!attempt || attempt.status !== 'IN_PROGRESS' || attempt.remainingSeconds == null || isSubmittedSuccessfully) {
+        if (!attemptId || attemptStatus !== 'IN_PROGRESS' || remainingSeconds == null || isSubmittedSuccessfully) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setSecondsRemaining(null);
             return;
         }
 
-        setSecondsRemaining(attempt.remainingSeconds);
+        setSecondsRemaining(remainingSeconds);
 
-        if (attempt.remainingSeconds <= 0) {
+        if (remainingSeconds <= 0) {
             return;
         }
 
@@ -219,7 +228,7 @@ export default function QuizAttemptPage() {
         return () => {
             clearInterval(intervalId);
         };
-    }, [attempt?.id, attempt?.status, attempt?.remainingSeconds, isSubmittedSuccessfully]);
+    }, [attemptId, attemptStatus, remainingSeconds, isSubmittedSuccessfully]);
 
     // Prompt 7: Trigger auto-submit when server-derived countdown reaches zero
     useEffect(() => {

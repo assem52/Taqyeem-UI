@@ -24,7 +24,7 @@ const DEMO_ACCOUNTS = {
 };
 
 function homeForRole(role) {
-  return role === "ADMIN" ? "/admin/quizzes" : "/";
+  return role === "ADMIN" ? "/admin/quizzes" : "/dashboard";
 }
 
 function destinationForLogin(role, next) {

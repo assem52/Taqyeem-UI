@@ -11,6 +11,7 @@ import InvitationPage from "../features/studentQuizzes/pages/InvitationPage";
 import QuizAttemptPage from "../features/studentQuizzes/pages/QuizAttemptPage";
 import QuizResultsPage from "../features/studentQuizzes/pages/QuizResultsPage";
 import PitchLandingPage from "../features/marketing/pages/PitchLandingPage";
+import Homepage from "../features/home/pages/Homepage";
 import NotFound from "../shared/components/NotFound";
 import LoginPage from "../features/auth/pages/LoginPage";
 import RegisterPage from "../features/auth/pages/RegisterPage";
@@ -26,8 +27,9 @@ export const router = createBrowserRouter([
   { path: '/verify-email', element: <VerifyEmailGate /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
+  { path: '/', element: <Homepage /> },
   {
-    path: '/',
+    path: '/dashboard',
     element: (
       <RequireAuth>
         <RequireRole role="STUDENT">

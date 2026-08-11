@@ -7,6 +7,12 @@ import {
   useGetMeQuery,
 } from '../authApi';
 import { clearAuthSession } from '../../../shared/utils/authSession';
+import AuthShell, {
+  authFieldClass,
+  authLabelClass,
+  authPrimaryBtnClass,
+} from '../components/AuthShell';
+import { CheckCircle2, AlertCircle, Loader2 } from '../../../shared/components/Icons';
 
 export default function VerifyEmailPage() {
   const dispatch = useDispatch();
@@ -112,269 +118,126 @@ export default function VerifyEmailPage() {
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        backgroundColor: '#0f172a',
-        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
-        padding: '20px',
-      }}
+    <AuthShell
+      title="Verify your email"
+      subtitle={infoMsg}
+      footer={
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="text-primary font-semibold hover:underline"
+        >
+          Return to Sign In
+        </button>
+      }
     >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '480px',
-          padding: '40px 32px',
-          borderRadius: '16px',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3)',
-          background: '#ffffff',
-          boxSizing: 'border-box',
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div
-            style={{
-              width: '56px',
-              height: '56px',
-              backgroundColor: '#eff6ff',
-              color: '#2563eb',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px auto',
-              fontSize: '24px',
-              fontWeight: 'bold',
-            }}
-          >
-            ✉️
-          </div>
-          <h2 style={{ margin: '0 0 8px 0', color: '#1e293b', fontSize: '24px', fontWeight: '700' }}>
-            Verify Your Email
-          </h2>
-          <p style={{ margin: 0, color: '#64748b', fontSize: '14px', lineHeight: '1.5' }}>
-            {infoMsg}
-          </p>
+      {email ? (
+        <div className="border-border bg-background text-heading mb-5 rounded-button border px-3.5 py-2.5 text-center text-sm font-medium">
+          Registered Email: <span className="font-bold text-heading">{email}</span>
         </div>
+      ) : null}
 
-        {email && (
-          <div
-            style={{
-              backgroundColor: '#f8fafc',
-              border: '1px solid #e2e8f0',
-              borderRadius: '8px',
-              padding: '12px 16px',
-              marginBottom: '20px',
-              textAlign: 'center',
-              fontSize: '14px',
-              color: '#334155',
-            }}
-          >
-            Registered Email:{' '}
-            <strong style={{ color: '#0f172a' }}>{email}</strong>
-          </div>
-        )}
+      {resendSuccess ? (
+        <div
+          role="status"
+          className="border-success/20 bg-success/10 text-success mb-5 flex items-start gap-2 rounded-button border px-3.5 py-2.5 text-sm"
+        >
+          <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
+          <span>{resendSuccess}</span>
+        </div>
+      ) : null}
 
-        {resendSuccess && (
-          <div
-            style={{
-              backgroundColor: '#ecfdf5',
-              border: '1px solid #a7f3d0',
-              color: '#065f46',
-              padding: '12px 14px',
-              borderRadius: '8px',
-              marginBottom: '20px',
-              fontSize: '13px',
-              textAlign: 'center',
-            }}
-          >
-            {resendSuccess}
-          </div>
-        )}
+      {resendError ? (
+        <div
+          role="alert"
+          className="border-danger/20 bg-danger/5 text-danger mb-5 flex items-start gap-2 rounded-button border px-3.5 py-2.5 text-sm"
+        >
+          <AlertCircle size={18} className="mt-0.5 shrink-0" />
+          <span>{resendError}</span>
+        </div>
+      ) : null}
 
-        {resendError && (
-          <div
-            style={{
-              backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
-              color: '#991b1b',
-              padding: '12px 14px',
-              borderRadius: '8px',
-              marginBottom: '20px',
-              fontSize: '13px',
-              textAlign: 'center',
-            }}
-          >
-            {resendError}
-          </div>
-        )}
+      {verifySuccess ? (
+        <div
+          role="status"
+          className="border-success/20 bg-success/10 text-success mb-5 flex items-start gap-2 rounded-button border px-3.5 py-2.5 text-sm font-semibold"
+        >
+          <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
+          <span>{verifySuccess} Redirecting…</span>
+        </div>
+      ) : null}
 
-        {verifySuccess && (
-          <div
-            style={{
-              backgroundColor: '#ecfdf5',
-              border: '1px solid #a7f3d0',
-              color: '#065f46',
-              padding: '12px 14px',
-              borderRadius: '8px',
-              marginBottom: '20px',
-              fontSize: '13px',
-              textAlign: 'center',
-              fontWeight: '600',
-            }}
-          >
-            {verifySuccess} Redirecting...
-          </div>
-        )}
+      {verifyError ? (
+        <div
+          role="alert"
+          className="border-danger/20 bg-danger/5 text-danger mb-5 flex items-start gap-2 rounded-button border px-3.5 py-2.5 text-sm"
+        >
+          <AlertCircle size={18} className="mt-0.5 shrink-0" />
+          <span>{verifyError}</span>
+        </div>
+      ) : null}
 
-        {verifyError && (
-          <div
-            style={{
-              backgroundColor: '#fef2f2',
-              border: '1px solid #fecaca',
-              color: '#991b1b',
-              padding: '12px 14px',
-              borderRadius: '8px',
-              marginBottom: '20px',
-              fontSize: '13px',
-              textAlign: 'center',
-            }}
-          >
-            {verifyError}
-          </div>
-        )}
-
-        {/* Verification Token Form */}
-        <form onSubmit={handleVerifyToken} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {!email && (
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  marginBottom: '6px',
-                  fontWeight: '600',
-                  color: '#334155',
-                  fontSize: '13px',
-                }}
-              >
-                Email Address
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="name@example.com"
-                style={{
-                  width: '100%',
-                  padding: '11px 14px',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '8px',
-                  outline: 'none',
-                  fontSize: '14px',
-                  boxSizing: 'border-box',
-                  backgroundColor: '#f8fafc',
-                }}
-              />
-            </div>
-          )}
-
+      {/* Verification Token Form */}
+      <form onSubmit={handleVerifyToken} className="space-y-4">
+        {!email && (
           <div>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: '6px',
-                fontWeight: '600',
-                color: '#334155',
-                fontSize: '13px',
-              }}
-            >
-              Verification Token
+            <label htmlFor="verify-email-input" className={authLabelClass}>
+              Email Address
             </label>
             <input
-              type="text"
-              value={verificationToken}
-              onChange={(e) => setVerificationToken(e.target.value)}
-              placeholder="Paste verification token"
-              style={{
-                width: '100%',
-                padding: '11px 14px',
-                border: '1px solid #cbd5e1',
-                borderRadius: '8px',
-                outline: 'none',
-                fontSize: '14px',
-                boxSizing: 'border-box',
-                backgroundColor: '#f8fafc',
-              }}
+              id="verify-email-input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="name@example.com"
+              className={authFieldClass}
+              autoComplete="email"
             />
           </div>
+        )}
 
-          <button
-            type="submit"
-            disabled={isVerifying || !verificationToken.trim()}
-            style={{
-              padding: '12px',
-              background: '#2563eb',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: isVerifying || !verificationToken.trim() ? 'not-allowed' : 'pointer',
-              fontWeight: '600',
-              fontSize: '15px',
-              opacity: isVerifying || !verificationToken.trim() ? 0.7 : 1,
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
-            }}
-          >
-            {isVerifying ? 'Verifying...' : 'Verify Email'}
-          </button>
-        </form>
-
-        <div style={{ margin: '20px 0', borderTop: '1px solid #e2e8f0' }} />
-
-        {/* Resend Section */}
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ margin: '0 0 12px 0', color: '#64748b', fontSize: '13px' }}>
-            Didn't receive the email or token expired?
-          </p>
-          <button
-            type="button"
-            onClick={handleResend}
-            disabled={isResending}
-            style={{
-              padding: '10px 18px',
-              background: '#f1f5f9',
-              color: '#1e293b',
-              border: '1px solid #cbd5e1',
-              borderRadius: '8px',
-              cursor: isResending ? 'not-allowed' : 'pointer',
-              fontWeight: '600',
-              fontSize: '13px',
-            }}
-          >
-            {isResending ? 'Sending...' : 'Resend Verification Email'}
-          </button>
+        <div>
+          <label htmlFor="verify-token-input" className={authLabelClass}>
+            Verification Token
+          </label>
+          <input
+            id="verify-token-input"
+            type="text"
+            value={verificationToken}
+            onChange={(e) => setVerificationToken(e.target.value)}
+            placeholder="Paste verification token"
+            className={authFieldClass}
+          />
         </div>
 
-        <div style={{ marginTop: '24px', textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={handleLogout}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#64748b',
-              cursor: 'pointer',
-              fontSize: '13px',
-              textDecoration: 'underline',
-            }}
-          >
-            Return to Sign In
-          </button>
-        </div>
+        <button
+          type="submit"
+          disabled={isVerifying || !verificationToken.trim()}
+          className={`${authPrimaryBtnClass} flex items-center justify-center gap-2`}
+        >
+          {isVerifying ? (
+            <>
+              <Loader2 size={16} />
+              <span>Verifying…</span>
+            </>
+          ) : (
+            'Verify Email'
+          )}
+        </button>
+      </form>
+
+      <div className="border-border my-6 border-t pt-6 text-center">
+        <p className="text-muted mb-3 text-xs">Didn&apos;t receive the email or token expired?</p>
+        <button
+          type="button"
+          onClick={handleResend}
+          disabled={isResending}
+          className="border-border bg-surface text-heading hover:bg-background w-full rounded-button border px-4 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isResending ? 'Sending…' : 'Resend Verification Email'}
+        </button>
       </div>
-    </div>
+    </AuthShell>
   );
 }

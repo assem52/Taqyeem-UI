@@ -28,13 +28,12 @@ export default function RegisterPage() {
 
       setSuccessMsg(
         result.message ||
-          'Registered. Enter your verification code on the next screen.',
+          'Registration successful! Redirecting to login…',
       );
-      const params = new URLSearchParams({
-        email: email.trim().toLowerCase(),
-      });
-      if (next) params.set('next', next);
-      setTimeout(() => navigate(`/verify?${params.toString()}`), 900);
+      const loginTarget = next ? `/login?next=${encodeURIComponent(next)}` : '/login';
+      setTimeout(() => {
+        navigate(loginTarget, { replace: true });
+      }, 900);
     } catch (err) {
       setErrorMsg(err?.data?.message || 'Registration failed.');
     }

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ChevronLeft } from '../../../shared/components/Icons';
 
 /**
  * Shared auth chrome — matches Taqyem design tokens (not the old slate login theme).
@@ -13,7 +14,7 @@ export default function AuthShell({
     <div className="flex min-h-screen flex-col bg-background">
       <header className="border-border/80 border-b bg-surface/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-4 sm:px-6">
-          <Link to="/welcome" className="group flex items-center gap-2.5">
+          <Link to="/" className="group flex items-center gap-2.5">
             <span className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-white shadow-soft">
               T
             </span>
@@ -22,10 +23,11 @@ export default function AuthShell({
             </span>
           </Link>
           <Link
-            to="/welcome"
-            className="text-muted hover:text-heading text-sm font-medium transition"
+            to="/"
+            className="text-muted hover:text-heading flex items-center gap-1.5 text-xs font-semibold transition sm:text-sm"
           >
-            About
+            <ChevronLeft size={16} />
+            <span>Back to Homepage</span>
           </Link>
         </div>
       </header>

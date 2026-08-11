@@ -62,7 +62,7 @@ export default function QuizResultsPage() {
         title="No results yet"
         description="Submit the quiz first to see how you did."
         buttonText="Back to dashboard"
-        buttonLink="/"
+        buttonLink="/dashboard"
       />
     );
   }
@@ -71,7 +71,7 @@ export default function QuizResultsPage() {
     <AppShell variant="student">
         <div className="mx-auto max-w-3xl">
           <Link
-            to="/"
+            to="/dashboard"
             className="text-muted hover:text-heading mb-6 inline-flex items-center text-sm font-medium transition-colors"
           >
             <ChevronLeft size={16} className="mr-1" />
