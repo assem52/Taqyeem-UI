@@ -121,7 +121,7 @@ export default function InvitationPage() {
               Create learner account
             </Link>
           ) : (
-            <Link to="/" className="text-muted hover:text-heading mt-4 inline-block text-sm font-medium">
+            <Link to="/dashboard" className="text-muted hover:text-heading mt-4 inline-block text-sm font-medium">
               Go to dashboard
             </Link>
           )}

@@ -44,13 +44,13 @@ export default function AppSidebar({ variant = 'student' }) {
     .map((part) => part[0]?.toUpperCase())
     .join('');
 
-  const home = variant === 'admin' ? '/admin/quizzes' : '/';
+  const home = variant === 'admin' ? '/admin/quizzes' : '/dashboard';
   const profile = variant === 'admin' ? '/admin/profile' : '/profile';
 
   const quizzesActive =
     variant === 'admin'
       ? pathname.startsWith('/admin/quizzes')
-      : pathname === '/' || pathname.startsWith('/quizzes');
+      : pathname === '/dashboard' || pathname === '/' || pathname.startsWith('/quizzes');
   const coachActive = pathname.startsWith('/admin/follow-up');
   const profileActive = pathname === profile;
 

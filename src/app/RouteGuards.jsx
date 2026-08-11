@@ -67,7 +67,7 @@ export function VerifyEmailGate() {
   const currentStatus = meData?.status ?? localStorage.getItem('status');
 
   if (token && role === 'STUDENT' && currentStatus === 'VERIFIED') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   if (token && role === 'ADMIN') {
