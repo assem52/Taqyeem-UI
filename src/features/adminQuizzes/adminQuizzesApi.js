@@ -101,6 +101,11 @@ export const adminQuizzesApi = baseApi.injectEndpoints({
       providesTags: (result, error, attemptId) => [{ type: 'AttemptReview', id: attemptId }],
     }),
 
+    getRecentSubmissions: build.query({
+      query: () => '/admin/attempts/recent-submissions',
+      providesTags: ['RecentSubmissions'],
+    }),
+
     overrideEssayGrade: build.mutation({
       query: ({ attemptId, questionId, awardedPoints, feedback }) => ({
         url: `/admin/attempts/${attemptId}/questions/${questionId}/grade`,
@@ -131,4 +136,5 @@ export const {
   useGetQuizAttemptsQuery,
   useGetAdminAttemptReviewQuery,
   useOverrideEssayGradeMutation,
+  useGetRecentSubmissionsQuery,
 } = adminQuizzesApi;
