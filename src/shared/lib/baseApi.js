@@ -61,6 +61,8 @@ export const baseApi = createApi({
     'Quiz',
     'Quizzes',
     'Questions',
+    'BankQuestions',
+    'BankCategories',
     'Invitations',
     'QuizAnalytics',
     'QuestionAnalytics',

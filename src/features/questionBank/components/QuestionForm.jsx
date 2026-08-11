@@ -50,7 +50,10 @@ export default function QuestionForm({
   onCancel,
   isSaving,
   onDirtyChange,
+  categories,
+  initialCategoryId,
 }) {
+  const requireCategory = Array.isArray(categories);
   const initialType =
     question?.type === 'TRUE_FALSE' ? 'TRUE_FALSE' : 'MCQ';
   const [text, setText] = useState(question?.text ?? '');
@@ -58,6 +61,9 @@ export default function QuestionForm({
   const [type, setType] = useState(initialType);
   const [points, setPoints] = useState(question?.points ?? 1);
   const [options, setOptions] = useState(() => initialOptions(question, initialType));
+  const [categoryId, setCategoryId] = useState(
+    question?.categoryId ?? initialCategoryId ?? '',
+  );
   const [fieldErrors, setFieldErrors] = useState({});
   const [serverErrors, setServerErrors] = useState([]);
   const [isDirty, setIsDirty] = useState(false);
@@ -102,6 +108,9 @@ export default function QuestionForm({
   const validate = () => {
     const errors = {};
     if (!text.trim()) errors.text = 'Question text is required.';
+    if (requireCategory && !categoryId) {
+      errors.categoryId = 'Choose a category for this bank question.';
+    }
     if (!Number.isFinite(Number(points)) || Number(points) <= 0) {
       errors.points = 'Points must be greater than zero.';
     }
@@ -127,6 +136,7 @@ export default function QuestionForm({
         explanation: explanation.trim() || undefined,
         type,
         points: Number(points),
+        ...(requireCategory ? { categoryId } : {}),
         options: options.map((option, index) => ({
           option: option.option.trim(),
           isCorrect: option.isCorrect,
@@ -166,6 +176,37 @@ export default function QuestionForm({
               <li key={message}>{message}</li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {requireCategory && (
+        <div>
+          <label htmlFor="question-category" className={labelClass}>
+            Category
+          </label>
+          <select
+            id="question-category"
+            value={categoryId}
+            onChange={(event) => {
+              setCategoryId(event.target.value);
+              markDirty();
+            }}
+            className={inputClass}
+            aria-invalid={Boolean(fieldErrors.categoryId)}
+          >
+            <option value="">Select a category…</option>
+            {categories.map((category) => (
+              <option
+                key={category.categoryId}
+                value={category.categoryId}
+              >
+                {category.name}
+              </option>
+            ))}
+          </select>
+          {fieldErrors.categoryId && (
+            <p className="text-danger mt-1 text-xs">{fieldErrors.categoryId}</p>
+          )}
         </div>
       )}
 
