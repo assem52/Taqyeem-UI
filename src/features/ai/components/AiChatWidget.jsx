@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import AiSparklesIcon from './AiSparklesIcon';
 import { useSendChatMessageMutation } from '../aiApi';
 
 function errorMessage(error, fallback) {
@@ -64,8 +63,13 @@ export default function AiChatWidget() {
         <section className="pointer-events-auto border-border bg-surface shadow-soft flex h-[min(32rem,70vh)] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-dialog border">
           <header className="border-border flex items-center justify-between border-b px-4 py-3">
             <div className="flex items-start gap-2.5">
-              <span className="bg-heading/90 inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full">
-                <AiSparklesIcon className="h-7 w-7" />
+              <span className="bg-heading/90 inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full p-1.5">
+                <img
+                  src="/chat-icon.svg"
+                  alt=""
+                  className="h-full w-full object-contain"
+                  draggable={false}
+                />
               </span>
               <div>
                 <p className="font-display text-heading text-base">Taqyem Assistant</p>
@@ -121,11 +125,15 @@ export default function AiChatWidget() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="ai-generate-btn pointer-events-auto bg-primary hover:bg-primary-hover shadow-soft inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white transition hover:scale-[1.02] active:scale-[0.98]"
+        className="pointer-events-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#111113] shadow-[0_10px_28px_rgba(0,0,0,0.28)] transition hover:scale-[1.05] active:scale-[0.96]"
         aria-label={open ? 'Close assistant' : 'Open assistant'}
       >
-        <AiSparklesIcon className="h-6 w-6" />
-        {open ? 'Hide chat' : 'Ask AI'}
+        <img
+          src="/chat-icon.svg"
+          alt=""
+          className="h-8 w-8 object-contain"
+          draggable={false}
+        />
       </button>
     </div>
   );
