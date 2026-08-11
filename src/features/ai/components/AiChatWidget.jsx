@@ -64,8 +64,8 @@ export default function AiChatWidget() {
         <section className="pointer-events-auto border-border bg-surface shadow-soft flex h-[min(32rem,70vh)] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-dialog border">
           <header className="border-border flex items-center justify-between border-b px-4 py-3">
             <div className="flex items-start gap-2.5">
-              <span className="bg-primary-soft text-primary mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full">
-                <AiSparklesIcon className="h-4 w-4" />
+              <span className="bg-heading/90 inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full">
+                <AiSparklesIcon className="h-7 w-7" />
               </span>
               <div>
                 <p className="font-display text-heading text-base">Taqyem Assistant</p>
@@ -124,7 +124,7 @@ export default function AiChatWidget() {
         className="ai-generate-btn pointer-events-auto bg-primary hover:bg-primary-hover shadow-soft inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white transition hover:scale-[1.02] active:scale-[0.98]"
         aria-label={open ? 'Close assistant' : 'Open assistant'}
       >
-        <AiSparklesIcon className="h-4 w-4" />
+        <AiSparklesIcon className="h-6 w-6" />
         {open ? 'Hide chat' : 'Ask AI'}
       </button>
     </div>

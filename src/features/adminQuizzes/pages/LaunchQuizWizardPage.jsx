@@ -363,7 +363,7 @@ export default function LaunchQuizWizardPage() {
               }}
               className="ai-generate-btn border-primary/30 bg-primary-soft text-primary hover:bg-primary hover:text-white rounded-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition"
             >
-              <AiSparklesIcon className="h-4 w-4" />
+              <AiSparklesIcon className="h-6 w-6" />
               Generate with AI
             </Link>
             <Link
