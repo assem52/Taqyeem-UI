@@ -166,11 +166,11 @@ export default function NotificationBell({ variant = 'student' }) {
         <div
           role="dialog"
           aria-label="Notifications"
-          className="border-border bg-surface absolute bottom-full left-1/2 z-50 mb-2 flex w-[min(24rem,calc(100vw-1.5rem))] max-h-[min(40rem,85vh)] -translate-x-1/2 flex-col overflow-hidden rounded-card border shadow-soft sm:bottom-auto sm:top-0 sm:left-full sm:mb-0 sm:ml-2 sm:max-h-[min(42rem,90vh)] sm:w-[26rem] sm:translate-x-0"
+          className="border-border bg-surface absolute bottom-full left-1/2 z-50 mb-2 flex h-[min(34rem,82vh)] w-[17.5rem] max-w-[calc(100vw-1.5rem)] -translate-x-1/2 flex-col overflow-hidden rounded-card border shadow-soft sm:bottom-auto sm:top-0 sm:left-full sm:mb-0 sm:ml-2 sm:h-[min(38rem,88vh)] sm:w-72 sm:translate-x-0"
         >
           {variant === 'admin' ? (
-            <div className="flex min-h-0 max-h-[min(40rem,85vh)] flex-col sm:max-h-[min(42rem,90vh)]">
-              <div className="border-border flex items-center justify-between gap-2 border-b px-4 py-3">
+            <div className="flex h-full min-h-0 flex-col">
+              <div className="border-border flex shrink-0 items-center justify-between gap-2 border-b px-3 py-2.5">
                 <p className="text-heading text-sm font-semibold">Notifications</p>
                 {admin.unreadCount > 0 ? (
                   <button
@@ -183,7 +183,7 @@ export default function NotificationBell({ variant = 'student' }) {
                 ) : null}
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+              <div className="min-h-0 flex-1 overflow-y-auto px-2.5 py-2.5">
                 {admin.followUpTotal > 0 ? (
                   <div className="border-border bg-background mb-3 rounded-button border px-3 py-2.5">
                     <p className="text-heading text-xs font-semibold">Follow-up</p>
@@ -222,7 +222,7 @@ export default function NotificationBell({ variant = 'student' }) {
                               admin.markOne(row.attemptId);
                               setOpen(false);
                             }}
-                            className={`hover:bg-background block rounded-button px-2.5 py-2.5 text-left transition ${
+                            className={`hover:bg-background block rounded-button px-2 py-2 text-left transition ${
                               isUnread ? 'bg-primary-soft/50' : ''
                             }`}
                           >
@@ -233,10 +233,10 @@ export default function NotificationBell({ variant = 'student' }) {
                                 submitted
                               </span>
                             </p>
-                            <p className="text-heading mt-0.5 truncate text-xs">
+                            <p className="text-heading mt-0.5 truncate text-[11px]">
                               {row.quizTitle}
                             </p>
-                            <p className="text-muted mt-0.5 text-[11px]">
+                            <p className="text-muted mt-0.5 text-[10px]">
                               {row.score != null ? `${row.score}%` : 'Scored'}
                               {row.submittedAt
                                 ? ` · ${formatWhen(row.submittedAt)}`
@@ -251,8 +251,8 @@ export default function NotificationBell({ variant = 'student' }) {
               </div>
             </div>
           ) : (
-            <div className="p-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
+            <div className="flex h-full min-h-0 flex-col p-3">
+              <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
                 <p className="text-heading text-sm font-semibold">Invites</p>
                 {student.unreadCount > 0 ? (
                   <button
@@ -270,7 +270,7 @@ export default function NotificationBell({ variant = 'student' }) {
                   up here.
                 </p>
               ) : (
-                <ul className="max-h-[min(28rem,70vh)] space-y-1 overflow-y-auto">
+                <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto">
                   {student.invites.map((quiz) => {
                     const isUnread = !student.seen.has(quiz.quizId);
                     return (
