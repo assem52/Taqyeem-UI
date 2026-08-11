@@ -210,7 +210,18 @@ Ensure API CORS allows the web origin (`FRONTEND_URL` / `CORS_ORIGINS` on the se
 
 ---
 
+## Documentation
+
+| Doc | Purpose |
+| :--- | :--- |
+| [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) | Web-side handoff pointer |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Branch & PR workflow |
+| Backend docs | Architecture, AI generation, API Swagger (`/api`) |
+
+---
+
 ## Related
 
 - API service: sibling `backend/` repository (NestJS + Prisma + PostgreSQL).
-- Deeper UI notes (if present): `FRONTEND_DOCUMENTATION.md`, `docs/`.
+- Backend handoff: `docs/PROJECT_OVERVIEW.md`, `docs/ARCHITECTURE.md`, `docs/AI_QUESTION_GENERATION.md`.
+- Screenshots: `docs/screenshots/`.

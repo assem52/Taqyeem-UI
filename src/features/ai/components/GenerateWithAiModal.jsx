@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import AiSparklesIcon from './AiSparklesIcon';
 import { useGenerateAiQuestionsMutation } from '../aiApi';
 import { useCreateBankCategoryMutation } from '../../questionBank/globalQuestionBankApi';
@@ -108,12 +108,18 @@ export default function GenerateWithAiModal({
   const [sourceSummary, setSourceSummary] = useState('');
   const [generate, generateState] = useGenerateAiQuestionsMutation();
   const [createCategory, createCategoryState] = useCreateBankCategoryMutation();
+  const [syncedOpen, setSyncedOpen] = useState(open);
 
-  useEffect(() => {
-    if (!open) return;
-    setCategoryId(defaultCategoryId || '');
-    setCategoryMode(defaultCategoryId ? 'existing' : categories.length ? 'existing' : 'new');
-  }, [open, defaultCategoryId, categories.length]);
+  // Reset category fields when the dialog opens (React "adjust state when prop changes").
+  if (open !== syncedOpen) {
+    setSyncedOpen(open);
+    if (open) {
+      setCategoryId(defaultCategoryId || '');
+      setCategoryMode(
+        defaultCategoryId ? 'existing' : categories.length ? 'existing' : 'new',
+      );
+    }
+  }
 
   const selectedDrafts = useMemo(
     () => drafts.filter((draft) => selected[draft.clientId]),
@@ -224,7 +230,13 @@ export default function GenerateWithAiModal({
     try {
       const resolvedCategoryId = await resolveCategoryId();
       await onSaveSelected({
-        drafts: selectedDrafts.map(({ clientId, ...draft }) => draft),
+        drafts: selectedDrafts.map(({ text, explanation, type, points, options }) => ({
+          text,
+          explanation,
+          type,
+          points,
+          options,
+        })),
         categoryId: resolvedCategoryId,
       });
       resetResults();
