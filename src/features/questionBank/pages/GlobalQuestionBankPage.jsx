@@ -160,10 +160,10 @@ export default function GlobalQuestionBankPage() {
           <button
             type="button"
             onClick={() => setShowAiGenerate(true)}
-            disabled={isMutating || isLoading || categories.length === 0 || aiSaving}
-            className="ai-generate-btn border-primary/30 bg-primary-soft text-primary hover:bg-primary hover:text-white rounded-button inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold transition disabled:opacity-50"
+            disabled={isMutating || isLoading || aiSaving}
+            className="ai-generate-btn rounded-button inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold"
           >
-            <AiSparklesIcon className="h-6 w-6" />
+            <AiSparklesIcon className="h-5 w-5" />
             Generate with AI
           </button>
           <button

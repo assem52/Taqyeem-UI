@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AiSparklesIcon from './AiSparklesIcon';
 import { useGenerateAiQuestionsMutation } from '../aiApi';
+import { useCreateBankCategoryMutation } from '../../questionBank/globalQuestionBankApi';
 
 function errorMessage(error, fallback) {
   const value =
@@ -12,9 +13,60 @@ function errorMessage(error, fallback) {
   return value || fallback;
 }
 
-function draftKey(draft, index) {
-  return `${index}-${draft.text?.slice(0, 24) || 'draft'}`;
+function newClientId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `draft-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
+
+function normalizeDraft(draft) {
+  const type = draft.type === 'TRUE_FALSE' ? 'TRUE_FALSE' : 'MCQ';
+  let options = Array.isArray(draft.options)
+    ? draft.options.map((option) => ({
+        option: String(option.option ?? '').trim(),
+        isCorrect: Boolean(option.isCorrect),
+      }))
+    : [];
+
+  if (type === 'TRUE_FALSE') {
+    const trueCorrect = options.some(
+      (option) => option.isCorrect && option.option.toLowerCase() === 'true',
+    );
+    options = [
+      { option: 'True', isCorrect: trueCorrect || !options.some((o) => o.isCorrect) },
+      { option: 'False', isCorrect: !trueCorrect && options.some((o) => o.isCorrect) },
+    ];
+    if (!options.some((option) => option.isCorrect)) {
+      options[0].isCorrect = true;
+    }
+    if (options.filter((option) => option.isCorrect).length > 1) {
+      options[1].isCorrect = false;
+    }
+  } else if (options.length === 0) {
+    options = [
+      { option: '', isCorrect: true },
+      { option: '', isCorrect: false },
+    ];
+  } else if (!options.some((option) => option.isCorrect)) {
+    options = options.map((option, index) => ({
+      ...option,
+      isCorrect: index === 0,
+    }));
+  }
+
+  return {
+    clientId: draft.clientId || newClientId(),
+    text: draft.text || '',
+    explanation: draft.explanation || '',
+    type,
+    points: Number(draft.points) > 0 ? Number(draft.points) : 1,
+    options,
+  };
+}
+
+const fieldClass =
+  'border-border bg-surface text-heading placeholder:text-muted focus:border-primary focus:ring-primary/20 w-full rounded-input border px-3 py-2 text-sm outline-none focus:ring-2';
 
 /**
  * @param {object} props
@@ -40,15 +92,24 @@ export default function GenerateWithAiModal({
   const [pdf, setPdf] = useState(null);
   const [count, setCount] = useState(5);
   const [typePreference, setTypePreference] = useState('MIXED');
-  const [categoryId, setCategoryId] = useState(defaultCategoryId);
+  const [categoryId, setCategoryId] = useState(defaultCategoryId || '');
+  const [categoryMode, setCategoryMode] = useState('existing');
+  const [newCategoryName, setNewCategoryName] = useState('');
   const [drafts, setDrafts] = useState([]);
   const [selected, setSelected] = useState({});
   const [error, setError] = useState('');
   const [sourceSummary, setSourceSummary] = useState('');
   const [generate, generateState] = useGenerateAiQuestionsMutation();
+  const [createCategory, createCategoryState] = useCreateBankCategoryMutation();
+
+  useEffect(() => {
+    if (!open) return;
+    setCategoryId(defaultCategoryId || '');
+    setCategoryMode(defaultCategoryId ? 'existing' : categories.length ? 'existing' : 'new');
+  }, [open, defaultCategoryId, categories.length]);
 
   const selectedDrafts = useMemo(
-    () => drafts.filter((draft, index) => selected[draftKey(draft, index)]),
+    () => drafts.filter((draft) => selected[draft.clientId]),
     [drafts, selected],
   );
 
@@ -61,8 +122,18 @@ export default function GenerateWithAiModal({
   };
 
   const handleClose = () => {
-    if (generateState.isLoading || saving) return;
+    if (generateState.isLoading || saving || createCategoryState.isLoading) return;
     onClose();
+  };
+
+  const updateDraft = (clientId, updater) => {
+    setDrafts((current) =>
+      current.map((draft) => {
+        if (draft.clientId !== clientId) return draft;
+        const next = typeof updater === 'function' ? updater(draft) : { ...draft, ...updater };
+        return normalizeDraft(next);
+      }),
+    );
   };
 
   const handleGenerate = async (event) => {
@@ -72,9 +143,15 @@ export default function GenerateWithAiModal({
       setError('Add a topic, pasted text, or a PDF.');
       return;
     }
-    if (target === 'bank' && !categoryId) {
-      setError('Choose a category for bank drafts.');
-      return;
+    if (target === 'bank') {
+      if (categoryMode === 'existing' && !categoryId) {
+        setError('Choose a category, or create a new one.');
+        return;
+      }
+      if (categoryMode === 'new' && !newCategoryName.trim()) {
+        setError('Enter a name for the new category.');
+        return;
+      }
     }
 
     const formData = new FormData();
@@ -86,12 +163,12 @@ export default function GenerateWithAiModal({
 
     try {
       const result = await generate(formData).unwrap();
-      const nextDrafts = result.drafts || [];
+      const nextDrafts = (result.drafts || []).map((draft) => normalizeDraft(draft));
       setDrafts(nextDrafts);
       setSourceSummary(result.sourceSummary || '');
       const initial = {};
-      nextDrafts.forEach((draft, index) => {
-        initial[draftKey(draft, index)] = true;
+      nextDrafts.forEach((draft) => {
+        initial[draft.clientId] = true;
       });
       setSelected(initial);
     } catch (err) {
@@ -100,8 +177,18 @@ export default function GenerateWithAiModal({
     }
   };
 
-  const toggleDraft = (key) => {
-    setSelected((current) => ({ ...current, [key]: !current[key] }));
+  const toggleDraft = (clientId) => {
+    setSelected((current) => ({ ...current, [clientId]: !current[clientId] }));
+  };
+
+  const resolveCategoryId = async () => {
+    if (target !== 'bank') return undefined;
+    if (categoryMode === 'existing') return categoryId;
+    const created = await createCategory({ name: newCategoryName.trim() }).unwrap();
+    setCategoryId(created.categoryId);
+    setCategoryMode('existing');
+    setNewCategoryName('');
+    return created.categoryId;
   };
 
   const handleSave = async () => {
@@ -109,11 +196,28 @@ export default function GenerateWithAiModal({
       setError('Select at least one draft to save.');
       return;
     }
+
+    for (const draft of selectedDrafts) {
+      if (!draft.text.trim()) {
+        setError('Selected drafts need question text.');
+        return;
+      }
+      if (draft.options.some((option) => !option.option.trim())) {
+        setError('Fill in every option on selected drafts, or remove empty ones.');
+        return;
+      }
+      if (draft.options.filter((option) => option.isCorrect).length !== 1) {
+        setError('Each selected draft needs exactly one correct option.');
+        return;
+      }
+    }
+
     setError('');
     try {
+      const resolvedCategoryId = await resolveCategoryId();
       await onSaveSelected({
-        drafts: selectedDrafts,
-        categoryId: target === 'bank' ? categoryId : undefined,
+        drafts: selectedDrafts.map(({ clientId, ...draft }) => draft),
+        categoryId: resolvedCategoryId,
       });
       resetResults();
       setTopic('');
@@ -126,7 +230,7 @@ export default function GenerateWithAiModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 p-4 sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-heading/25 p-4 sm:items-center">
       <div
         role="dialog"
         aria-modal="true"
@@ -135,15 +239,15 @@ export default function GenerateWithAiModal({
       >
         <div className="border-border flex items-start justify-between gap-4 border-b px-5 py-4">
           <div>
-            <p className="text-primary mb-1 inline-flex items-center gap-1.5 text-xs font-semibold tracking-[0.18em] uppercase">
-              <AiSparklesIcon className="h-5 w-5" />
+            <p className="text-primary mb-1 inline-flex items-center gap-1.5 text-xs font-semibold tracking-[0.14em] uppercase">
+              <AiSparklesIcon className="h-4 w-4" />
               Generate with AI
             </p>
             <h2 id="generate-ai-title" className="font-display text-heading text-xl">
               Draft questions from a topic, notes, or PDF
             </h2>
             <p className="text-muted mt-1 text-sm">
-              Review drafts, edit nothing yet — save only the ones you want.
+              Generate drafts, edit them inline, then save only what you want.
             </p>
           </div>
           <button
@@ -158,23 +262,51 @@ export default function GenerateWithAiModal({
         <div className="max-h-[calc(90vh-5rem)] space-y-5 overflow-y-auto px-5 py-4">
           <form onSubmit={handleGenerate} className="space-y-4">
             {target === 'bank' ? (
-              <div>
-                <label htmlFor="ai-category" className="text-heading mb-1.5 block text-sm font-medium">
-                  Save into category
-                </label>
-                <select
-                  id="ai-category"
-                  value={categoryId}
-                  onChange={(event) => setCategoryId(event.target.value)}
-                  className="border-border bg-background text-heading focus:border-primary focus:ring-primary/20 w-full rounded-input border px-3 py-2 text-sm outline-none focus:ring-2"
-                >
-                  <option value="">Select category…</option>
-                  {categories.map((category) => (
-                    <option key={category.categoryId} value={category.categoryId}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+              <div className="space-y-3">
+                <p className="text-heading text-sm font-medium">Save into category</p>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <label className="text-body inline-flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="ai-category-mode"
+                      checked={categoryMode === 'existing'}
+                      onChange={() => setCategoryMode('existing')}
+                    />
+                    Existing category
+                  </label>
+                  <label className="text-body inline-flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="ai-category-mode"
+                      checked={categoryMode === 'new'}
+                      onChange={() => setCategoryMode('new')}
+                    />
+                    Create new category
+                  </label>
+                </div>
+                {categoryMode === 'existing' ? (
+                  <select
+                    id="ai-category"
+                    value={categoryId}
+                    onChange={(event) => setCategoryId(event.target.value)}
+                    className={fieldClass}
+                  >
+                    <option value="">Select category…</option>
+                    {categories.map((category) => (
+                      <option key={category.categoryId} value={category.categoryId}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    id="ai-new-category"
+                    value={newCategoryName}
+                    onChange={(event) => setNewCategoryName(event.target.value)}
+                    placeholder="e.g. Midterm revision"
+                    className={fieldClass}
+                  />
+                )}
               </div>
             ) : null}
 
@@ -187,7 +319,7 @@ export default function GenerateWithAiModal({
                 value={topic}
                 onChange={(event) => setTopic(event.target.value)}
                 placeholder="e.g. Intro to Photosynthesis"
-                className="border-border bg-background text-heading placeholder:text-muted focus:border-primary focus:ring-primary/20 w-full rounded-input border px-3 py-2 text-sm outline-none focus:ring-2"
+                className={fieldClass}
               />
             </div>
 
@@ -199,14 +331,14 @@ export default function GenerateWithAiModal({
                 id="ai-content"
                 value={content}
                 onChange={(event) => setContent(event.target.value)}
-                rows={5}
+                rows={4}
                 placeholder="Paste notes, outline, or excerpt…"
-                className="border-border bg-background text-heading placeholder:text-muted focus:border-primary focus:ring-primary/20 w-full rounded-input border px-3 py-2 text-sm outline-none focus:ring-2"
+                className={fieldClass}
               />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">
-              <div className="sm:col-span-1">
+              <div>
                 <label htmlFor="ai-count" className="text-heading mb-1.5 block text-sm font-medium">
                   Count
                 </label>
@@ -217,10 +349,10 @@ export default function GenerateWithAiModal({
                   max={15}
                   value={count}
                   onChange={(event) => setCount(Number(event.target.value) || 1)}
-                  className="border-border bg-background text-heading focus:border-primary focus:ring-primary/20 w-full rounded-input border px-3 py-2 text-sm outline-none focus:ring-2"
+                  className={fieldClass}
                 />
               </div>
-              <div className="sm:col-span-1">
+              <div>
                 <label htmlFor="ai-type" className="text-heading mb-1.5 block text-sm font-medium">
                   Type
                 </label>
@@ -228,14 +360,14 @@ export default function GenerateWithAiModal({
                   id="ai-type"
                   value={typePreference}
                   onChange={(event) => setTypePreference(event.target.value)}
-                  className="border-border bg-background text-heading focus:border-primary focus:ring-primary/20 w-full rounded-input border px-3 py-2 text-sm outline-none focus:ring-2"
+                  className={fieldClass}
                 >
                   <option value="MIXED">Mixed</option>
                   <option value="MCQ">MCQ only</option>
                   <option value="TRUE_FALSE">True/False only</option>
                 </select>
               </div>
-              <div className="sm:col-span-1">
+              <div>
                 <label htmlFor="ai-pdf" className="text-heading mb-1.5 block text-sm font-medium">
                   PDF (optional)
                 </label>
@@ -244,17 +376,17 @@ export default function GenerateWithAiModal({
                   type="file"
                   accept="application/pdf,.pdf"
                   onChange={(event) => setPdf(event.target.files?.[0] || null)}
-                  className="text-muted w-full text-sm file:border-border file:text-heading hover:file:bg-background file:mr-3 file:rounded-button file:border file:bg-surface file:px-3 file:py-1.5"
+                  className="text-muted w-full text-sm file:border-border file:text-heading hover:file:bg-background file:mr-3 file:rounded-button file:border file:bg-background file:px-3 file:py-1.5"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              disabled={generateState.isLoading || saving}
-              className="ai-generate-btn bg-primary hover:bg-primary-hover rounded-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+              disabled={generateState.isLoading || saving || createCategoryState.isLoading}
+              className="ai-generate-btn rounded-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold"
             >
-              <AiSparklesIcon className="h-6 w-6" />
+              <AiSparklesIcon className="h-5 w-5" />
               {generateState.isLoading ? 'Generating…' : 'Generate drafts'}
             </button>
           </form>
@@ -272,61 +404,182 @@ export default function GenerateWithAiModal({
                   <p className="text-heading text-sm font-semibold">
                     {drafts.length} draft{drafts.length === 1 ? '' : 's'}
                   </p>
-                  {sourceSummary ? (
-                    <p className="text-muted text-xs">From {sourceSummary}</p>
-                  ) : null}
+                  <p className="text-muted text-xs">
+                    Edit text, options, and correct answers before saving
+                    {sourceSummary ? ` · From ${sourceSummary}` : ''}
+                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleSave}
-                  disabled={saving || selectedDrafts.length === 0}
+                  disabled={
+                    saving ||
+                    createCategoryState.isLoading ||
+                    selectedDrafts.length === 0
+                  }
                   className="bg-primary hover:bg-primary-hover rounded-button px-3.5 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
-                  {saving
+                  {saving || createCategoryState.isLoading
                     ? 'Saving…'
                     : `Save selected (${selectedDrafts.length})`}
                 </button>
               </div>
 
-              <ul className="space-y-3">
-                {drafts.map((draft, index) => {
-                  const key = draftKey(draft, index);
-                  return (
-                    <li
-                      key={key}
-                      className="border-border bg-background rounded-card border px-4 py-3"
-                    >
-                      <label className="flex items-start gap-3">
+              <ul className="space-y-4">
+                {drafts.map((draft, index) => (
+                  <li
+                    key={draft.clientId}
+                    className="border-border bg-background rounded-card space-y-3 border px-4 py-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <label className="text-heading inline-flex items-center gap-2 text-sm font-medium">
                         <input
                           type="checkbox"
-                          checked={Boolean(selected[key])}
-                          onChange={() => toggleDraft(key)}
-                          className="mt-1"
+                          checked={Boolean(selected[draft.clientId])}
+                          onChange={() => toggleDraft(draft.clientId)}
                         />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-heading text-sm font-medium">{draft.text}</p>
-                          <p className="text-muted mt-1 text-xs">
-                            {draft.type} · {draft.points || 1} pt
-                            {draft.explanation ? ` · ${draft.explanation}` : ''}
-                          </p>
-                          <ul className="mt-2 space-y-1">
-                            {(draft.options || []).map((option) => (
-                              <li
-                                key={`${key}-${option.option}`}
-                                className={`text-sm ${
-                                  option.isCorrect ? 'text-success font-medium' : 'text-body'
-                                }`}
-                              >
-                                {option.isCorrect ? '✓ ' : '• '}
-                                {option.option}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                        Draft {index + 1}
                       </label>
-                    </li>
-                  );
-                })}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select
+                          value={draft.type}
+                          onChange={(event) =>
+                            updateDraft(draft.clientId, { type: event.target.value })
+                          }
+                          className="border-border bg-surface text-heading rounded-input border px-2 py-1 text-xs"
+                        >
+                          <option value="MCQ">MCQ</option>
+                          <option value="TRUE_FALSE">True / False</option>
+                        </select>
+                        <label className="text-muted inline-flex items-center gap-1 text-xs">
+                          Points
+                          <input
+                            type="number"
+                            min={0.01}
+                            step={0.5}
+                            value={draft.points}
+                            onChange={(event) =>
+                              updateDraft(draft.clientId, {
+                                points: Number(event.target.value) || 1,
+                              })
+                            }
+                            className="border-border bg-surface text-heading w-16 rounded-input border px-2 py-1 text-xs"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-muted mb-1 block text-xs font-medium">
+                        Question
+                      </label>
+                      <textarea
+                        value={draft.text}
+                        onChange={(event) =>
+                          updateDraft(draft.clientId, { text: event.target.value })
+                        }
+                        rows={2}
+                        className={fieldClass}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-muted mb-1 block text-xs font-medium">
+                        Explanation (optional)
+                      </label>
+                      <input
+                        value={draft.explanation}
+                        onChange={(event) =>
+                          updateDraft(draft.clientId, {
+                            explanation: event.target.value,
+                          })
+                        }
+                        className={fieldClass}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-muted text-xs font-medium">Options</p>
+                        {draft.type === 'MCQ' ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateDraft(draft.clientId, (current) => ({
+                                ...current,
+                                options: [
+                                  ...current.options,
+                                  { option: '', isCorrect: false },
+                                ],
+                              }))
+                            }
+                            className="text-primary text-xs font-medium hover:underline"
+                          >
+                            Add option
+                          </button>
+                        ) : null}
+                      </div>
+                      <ul className="space-y-2">
+                        {draft.options.map((option, optionIndex) => (
+                          <li
+                            key={`${draft.clientId}-opt-${optionIndex}`}
+                            className="flex items-center gap-2"
+                          >
+                            <input
+                              type="radio"
+                              name={`correct-${draft.clientId}`}
+                              checked={option.isCorrect}
+                              onChange={() =>
+                                updateDraft(draft.clientId, (current) => ({
+                                  ...current,
+                                  options: current.options.map((row, rowIndex) => ({
+                                    ...row,
+                                    isCorrect: rowIndex === optionIndex,
+                                  })),
+                                }))
+                              }
+                              aria-label={`Mark option ${optionIndex + 1} correct`}
+                            />
+                            <input
+                              value={option.option}
+                              disabled={draft.type === 'TRUE_FALSE'}
+                              onChange={(event) =>
+                                updateDraft(draft.clientId, (current) => ({
+                                  ...current,
+                                  options: current.options.map((row, rowIndex) =>
+                                    rowIndex === optionIndex
+                                      ? { ...row, option: event.target.value }
+                                      : row,
+                                  ),
+                                }))
+                              }
+                              className={fieldClass}
+                            />
+                            {draft.type === 'MCQ' && draft.options.length > 2 ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateDraft(draft.clientId, (current) => {
+                                    const options = current.options.filter(
+                                      (_, rowIndex) => rowIndex !== optionIndex,
+                                    );
+                                    if (!options.some((row) => row.isCorrect) && options[0]) {
+                                      options[0] = { ...options[0], isCorrect: true };
+                                    }
+                                    return { ...current, options };
+                                  })
+                                }
+                                className="text-danger shrink-0 text-xs font-medium"
+                              >
+                                Remove
+                              </button>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </li>
+                ))}
               </ul>
             </div>
           ) : null}

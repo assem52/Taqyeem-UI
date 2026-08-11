@@ -140,15 +140,40 @@
   font-family: var(--font-display);
 }
 
-/* Brand AI icon from /public/ai.png */
+/* AI controls — stand out gently within dusty-mauve / off-white */
 .ai-brand-icon {
   display: inline-block;
-  filter: drop-shadow(0 0 0.35rem hsl(var(--primary) / 0.35));
-  transition: transform 0.2s ease, filter 0.2s ease;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
-.ai-generate-btn:hover .ai-brand-icon {
-  transform: scale(1.08);
-  filter: drop-shadow(0 0 0.55rem hsl(var(--primary) / 0.55));
+.ai-generate-btn {
+  border: 1px solid hsl(var(--primary) / 0.28);
+  background: hsl(var(--primary-soft));
+  color: hsl(var(--primary));
+  box-shadow: none;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.ai-generate-btn:hover:not(:disabled) {
+  border-color: hsl(var(--primary) / 0.45);
+  background: hsl(var(--primary));
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.ai-generate-btn:hover:not(:disabled) .ai-brand-icon {
+  transform: scale(1.04);
+}
+
+.ai-generate-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.ai-generate-btn:disabled {
+  opacity: 0.5;
 }
 
