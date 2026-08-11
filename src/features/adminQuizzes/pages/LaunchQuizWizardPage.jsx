@@ -161,15 +161,15 @@ export default function LaunchQuizWizardPage() {
 
   return (
     <AdminShell
-      title="Launch quiz"
-      subtitle="Basics, questions, publish, then invite — one path."
+      title="New quiz"
+      subtitle="Details → questions → publish → invite."
       actions={
         quizId ? (
           <Link
             to={`/admin/quizzes/${quizId}`}
             className="border-border text-heading hover:bg-background rounded-button border px-3 py-1.5 text-sm font-medium"
           >
-            Workspace
+            Exit to quiz
           </Link>
         ) : null
       }
@@ -326,21 +326,23 @@ export default function LaunchQuizWizardPage() {
               disabled={isCreating}
               className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {isCreating ? 'Creating…' : 'Continue to questions'}
+              {isCreating ? 'Creating…' : 'Next'}
             </button>
           </div>
         </form>
       )}
 
       {step === 'questions' && quizId && (
-        <div className="border-border bg-surface max-w-2xl space-y-4 rounded-card border p-6">
-          <h2 className="font-display text-heading text-xl">
-            {quiz?.title || 'Add questions'}
-          </h2>
-          <p className="text-body text-sm leading-relaxed">
-            Add at least one valid MCQ or true/false question with a correct answer. Prefer short
-            explanations — they teach after the test.
-          </p>
+        <div className="border-border bg-surface max-w-2xl space-y-5 rounded-card border p-6">
+          <div>
+            <h2 className="font-display text-heading text-xl">
+              {quiz?.title || 'Add questions'}
+            </h2>
+            <p className="text-body mt-1 text-sm leading-relaxed">
+              Add at least one scored question before publishing. You can write them yourself,
+              generate drafts, or reuse the bank.
+            </p>
+          </div>
           {quiz && !quiz.isValid && quiz.validationErrors?.length ? (
             <div className="border-warning/25 bg-warning/5 text-warning rounded-button border px-3 py-2 text-sm">
               <p className="font-medium">Not ready to publish yet</p>
@@ -352,45 +354,61 @@ export default function LaunchQuizWizardPage() {
             </div>
           ) : null}
           {quiz?.isValid ? (
-            <p className="text-success text-sm font-medium">Questions look publishable.</p>
+            <p className="text-success text-sm font-medium">Ready to publish.</p>
           ) : null}
-          <div className="flex flex-wrap gap-3">
-            <Link
-              to={`/admin/quizzes/${quizId}/questions`}
-              state={{
-                returnTo: `/admin/quizzes/launch?quizId=${quizId}&step=publish`,
-                notice: 'Tip: use Generate with AI to draft from a topic, notes, or PDF.',
-              }}
-              className="ai-generate-btn rounded-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold"
-            >
-              <AiSparklesIcon className="h-5 w-5" />
-              Generate with AI
-            </Link>
-            <Link
-              to={`/admin/quizzes/${quizId}/questions`}
-              state={{
-                returnTo: `/admin/quizzes/launch?quizId=${quizId}&step=publish`,
-                notice: 'When questions look good, continue the launch wizard.',
-              }}
-              className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white"
-            >
-              Open quiz questions
-            </Link>
-            <Link
-              to="/admin/question-bank"
+
+          <div>
+            <p className="text-muted mb-2 text-xs font-semibold tracking-wide uppercase">
+              Add questions
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to={`/admin/quizzes/${quizId}/questions`}
+                state={{
+                  returnTo: `/admin/quizzes/launch?quizId=${quizId}&step=publish`,
+                  notice: 'When questions look good, continue the launch wizard.',
+                }}
+                className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2 text-sm font-medium"
+              >
+                Edit questions
+              </Link>
+              <Link
+                to={`/admin/quizzes/${quizId}/questions`}
+                state={{
+                  returnTo: `/admin/quizzes/launch?quizId=${quizId}&step=publish`,
+                  notice: 'Tip: use Generate with AI to draft from a topic, notes, or PDF.',
+                }}
+                className="ai-generate-btn rounded-button inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold"
+              >
+                <AiSparklesIcon className="h-4 w-4" />
+                Generate with AI
+              </Link>
+              <Link
+                to="/admin/question-bank"
+                className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2 text-sm font-medium"
+              >
+                From bank
+              </Link>
+            </div>
+          </div>
+
+          <div className="border-border flex flex-wrap justify-end gap-2 border-t pt-4">
+            <button
+              type="button"
+              onClick={() => setStep('basics', quizId)}
               className="border-border text-heading hover:bg-background rounded-button border px-4 py-2.5 text-sm font-medium"
             >
-              Browse question bank
-            </Link>
+              Back
+            </button>
             <button
               type="button"
               onClick={() => {
                 refetch();
                 setStep('publish', quizId);
               }}
-              className="border-border text-heading hover:bg-background rounded-button border px-4 py-2.5 text-sm font-medium"
+              className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white"
             >
-              Continue to publish
+              Next
             </button>
           </div>
         </div>
@@ -398,47 +416,28 @@ export default function LaunchQuizWizardPage() {
 
       {step === 'publish' && quizId && (
         <div className="border-border bg-surface max-w-2xl space-y-4 rounded-card border p-6">
-          <h2 className="font-display text-heading text-xl">Publish for the cohort</h2>
+          <h2 className="font-display text-heading text-xl">Publish</h2>
           <p className="text-body text-sm">
-            Publishing unlocks invitations. Learners cannot start until the quiz is published and
-            the window is open.
+            Learners can only start after the quiz is published and the window opens. Invites unlock next.
           </p>
           {quiz?.status === 'PUBLISHED' ? (
             <p className="text-success text-sm font-medium">Already published.</p>
           ) : null}
           {!quiz?.isValid ? (
             <div className="border-warning/25 bg-warning/5 text-warning rounded-button border px-3 py-2 text-sm">
-              Fix question validation before publishing.
+              Fix questions before publishing.
               <div className="mt-2">
                 <button
                   type="button"
                   className="font-semibold underline"
                   onClick={() => setStep('questions', quizId)}
                 >
-                  Back to questions
+                  Fix questions
                 </button>
               </div>
             </div>
           ) : null}
-          <div className="flex flex-wrap gap-3">
-            {quiz?.status !== 'PUBLISHED' ? (
-              <button
-                type="button"
-                disabled={!quiz?.isValid || isPublishing}
-                onClick={handlePublish}
-                className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                {isPublishing ? 'Publishing…' : 'Publish quiz'}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setStep('invite', quizId)}
-                className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white"
-              >
-                Continue to invite
-              </button>
-            )}
+          <div className="flex flex-wrap justify-end gap-2">
             <button
               type="button"
               onClick={() => setStep('questions', quizId)}
@@ -446,15 +445,33 @@ export default function LaunchQuizWizardPage() {
             >
               Back
             </button>
+            {quiz?.status !== 'PUBLISHED' ? (
+              <button
+                type="button"
+                disabled={!quiz?.isValid || isPublishing}
+                onClick={handlePublish}
+                className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                {isPublishing ? 'Publishing…' : 'Publish'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setStep('invite', quizId)}
+                className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white"
+              >
+                Next
+              </button>
+            )}
           </div>
         </div>
       )}
 
       {step === 'invite' && quizId && (
         <div className="border-border bg-surface max-w-2xl space-y-4 rounded-card border p-6">
-          <h2 className="font-display text-heading text-xl">Invite the cohort</h2>
+          <h2 className="font-display text-heading text-xl">Invite learners</h2>
           <p className="text-muted text-sm">
-            Paste emails below. If delivery is simulated, use Copy link from Access after you finish.
+            Paste one email per line. You can invite more later from the quiz Access tab.
           </p>
           <form onSubmit={handleInvite} className="space-y-4">
             <textarea
@@ -474,26 +491,39 @@ export default function LaunchQuizWizardPage() {
                 ) : null}
               </div>
             ) : null}
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="submit"
-                disabled={isInviting || quiz?.status !== 'PUBLISHED'}
-                className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
-              >
-                {isInviting ? 'Sending…' : 'Send invites'}
-              </button>
-              <Link
-                to={`/admin/quizzes/${quizId}?tab=access`}
-                className="border-border text-heading hover:bg-background rounded-button border px-4 py-2.5 text-sm font-medium"
-              >
-                Open workspace · Access
-              </Link>
-              <Link
-                to={`/admin/quizzes/${quizId}`}
-                className="text-heading px-2 py-2.5 text-sm font-semibold underline"
-              >
-                Done — open workspace
-              </Link>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {inviteResult ? (
+                <>
+                  <Link
+                    to={`/admin/quizzes/${quizId}?tab=access`}
+                    className="border-border text-heading hover:bg-background rounded-button border px-4 py-2.5 text-sm font-medium"
+                  >
+                    View invitations
+                  </Link>
+                  <Link
+                    to={`/admin/quizzes/${quizId}`}
+                    className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white"
+                  >
+                    Finish
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to={`/admin/quizzes/${quizId}`}
+                    className="border-border text-heading hover:bg-background rounded-button border px-4 py-2.5 text-sm font-medium"
+                  >
+                    Skip for now
+                  </Link>
+                  <button
+                    type="submit"
+                    disabled={isInviting || quiz?.status !== 'PUBLISHED'}
+                    className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+                  >
+                    {isInviting ? 'Sending…' : 'Send invitations'}
+                  </button>
+                </>
+              )}
             </div>
           </form>
         </div>

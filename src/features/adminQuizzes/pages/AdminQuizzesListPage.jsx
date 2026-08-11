@@ -96,14 +96,14 @@ export default function AdminQuizzesListPage() {
 
   return (
     <AdminShell
-      title="Cohorts"
-      subtitle="Open a workspace to monitor, invite, and prove outcomes."
+      title="Quizzes"
+      subtitle="Create, publish, invite learners, and review results."
       actions={
         <Link
           to="/admin/quizzes/launch"
           className="bg-primary hover:bg-primary-hover rounded-button px-3.5 py-2 text-sm font-semibold text-white transition"
         >
-          Launch quiz
+          New quiz
         </Link>
       }
     >
@@ -129,14 +129,14 @@ export default function AdminQuizzesListPage() {
             to="/admin/follow-up"
             className="text-primary text-sm font-semibold hover:underline"
           >
-            Open follow-up
+            Review follow-ups
           </Link>
         </div>
       ) : null}
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <label className="sr-only" htmlFor="quiz-search">
-          Search cohorts
+          Search quizzes
         </label>
         <input
           id="quiz-search"
@@ -166,7 +166,7 @@ export default function AdminQuizzesListPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-muted py-16 text-center text-sm">Loading cohorts…</p>
+        <p className="text-muted py-16 text-center text-sm">Loading quizzes…</p>
       ) : isError ? (
         <div className="border-border bg-surface rounded-card border px-6 py-10 text-center">
           <p className="text-danger text-sm">Could not load quizzes.</p>
@@ -180,18 +180,18 @@ export default function AdminQuizzesListPage() {
         </div>
       ) : quizzes.length === 0 ? (
         <div className="border-border bg-surface rounded-card border px-6 py-14 text-center">
-          <h2 className="font-display text-heading text-xl">No cohorts yet</h2>
+          <h2 className="font-display text-heading text-xl">No quizzes yet</h2>
           <p className="text-muted mx-auto mt-2 max-w-sm text-sm">
             {search || statusFilter !== 'ALL'
               ? 'Nothing matched your search or filter.'
-              : 'Launch your first cohort quiz — guided from basics through invite.'}
+              : 'Start with a guided setup: details, questions, publish, then invite.'}
           </p>
           {!search && statusFilter === 'ALL' && (
             <Link
               to="/admin/quizzes/launch"
               className="bg-primary hover:bg-primary-hover mt-6 inline-flex rounded-button px-4 py-2.5 text-sm font-semibold text-white"
             >
-              Launch a cohort quiz
+              Create first quiz
             </Link>
           )}
         </div>
@@ -206,9 +206,12 @@ export default function AdminQuizzesListPage() {
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <h2 className="font-display text-heading text-xl tracking-tight">
+                      <Link
+                        to={`/admin/quizzes/${quiz.quizId}`}
+                        className="font-display text-heading hover:text-primary text-xl tracking-tight transition"
+                      >
                         {quiz.title}
-                      </h2>
+                      </Link>
                       <span className={`text-xs font-semibold tracking-wide uppercase ${statusClass(quiz.status)}`}>
                         {statusLabel(quiz.status)}
                       </span>
@@ -237,45 +240,58 @@ export default function AdminQuizzesListPage() {
                     </p>
                   </div>
 
-                  <div className="relative flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:items-start">
+                  <div className="relative flex shrink-0 items-center justify-end gap-2">
                     <Link
                       to={`/admin/quizzes/${quiz.quizId}`}
-                      className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-center text-sm font-semibold text-white transition"
+                      className="bg-primary hover:bg-primary-hover rounded-button px-3.5 py-2 text-center text-sm font-semibold text-white transition"
                     >
-                      Open workspace
+                      Manage
                     </Link>
                     <Link
-                      to={`/admin/quizzes/${quiz.quizId}?tab=results&view=snapshot`}
-                      className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2.5 text-center text-sm font-medium"
+                      to={`/admin/quizzes/${quiz.quizId}?tab=results`}
+                      className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2 text-center text-sm font-medium"
                     >
-                      Outcomes
+                      Results
                     </Link>
                     <button
                       type="button"
                       onClick={() => setMenuQuizId(menuOpen ? '' : quiz.quizId)}
-                      className="border-border text-heading hover:bg-background rounded-button border px-3.5 py-2.5 text-sm font-medium"
+                      className="border-border text-heading hover:bg-background rounded-button border px-2.5 py-2 text-sm font-medium leading-none"
                       aria-expanded={menuOpen}
+                      aria-haspopup="menu"
+                      aria-label={`Actions for ${quiz.title}`}
+                      title="Actions"
                     >
-                      More
+                      ···
                     </button>
                     {menuOpen ? (
-                      <div className="border-border bg-surface absolute top-full right-0 z-20 mt-1 min-w-[12rem] rounded-card border py-1 shadow-soft">
-                        <button
-                          type="button"
-                          className="hover:bg-background block w-full px-3 py-2 text-left text-sm"
-                          onClick={() => handleOpenEdit(quiz)}
-                        >
-                          Edit settings
-                        </button>
+                      <div
+                        role="menu"
+                        className="border-border bg-surface absolute top-full right-0 z-20 mt-1 min-w-[11.5rem] rounded-card border py-1 shadow-soft"
+                      >
                         <Link
+                          role="menuitem"
                           to={`/admin/quizzes/${quiz.quizId}/questions`}
                           className="hover:bg-background block px-3 py-2 text-sm"
                           onClick={() => setMenuQuizId('')}
                         >
-                          Questions
+                          Edit questions
                         </Link>
                         <button
                           type="button"
+                          role="menuitem"
+                          className="hover:bg-background block w-full px-3 py-2 text-left text-sm"
+                          onClick={() => {
+                            setSelectedQuizForInvite(quiz);
+                            setIsBulkInviteOpen(true);
+                            setMenuQuizId('');
+                          }}
+                        >
+                          Invite learners
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
                           className="hover:bg-background block w-full px-3 py-2 text-left text-sm disabled:opacity-50"
                           disabled={
                             isPublishing ||
@@ -288,15 +304,13 @@ export default function AdminQuizzesListPage() {
                         </button>
                         <button
                           type="button"
+                          role="menuitem"
                           className="hover:bg-background block w-full px-3 py-2 text-left text-sm"
-                          onClick={() => {
-                            setSelectedQuizForInvite(quiz);
-                            setIsBulkInviteOpen(true);
-                            setMenuQuizId('');
-                          }}
+                          onClick={() => handleOpenEdit(quiz)}
                         >
-                          Invite students
+                          Settings
                         </button>
+                        <div className="border-border my-1 border-t" />
                         <div className="px-3 py-1">
                           <DuplicateQuizButton
                             quiz={quiz}
@@ -310,6 +324,7 @@ export default function AdminQuizzesListPage() {
                         </div>
                         <button
                           type="button"
+                          role="menuitem"
                           className="text-danger hover:bg-background block w-full px-3 py-2 text-left text-sm disabled:opacity-40"
                           disabled={isDeleting || quiz.hasAttempts}
                           onClick={() => handleDelete(quiz)}
