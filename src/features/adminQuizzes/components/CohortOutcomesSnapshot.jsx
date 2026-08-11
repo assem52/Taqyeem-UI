@@ -93,7 +93,7 @@ export default function CohortOutcomesSnapshot({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-muted text-[11px] font-semibold tracking-wider uppercase">
-            Outcomes
+            Results
           </p>
           <h3 className="font-display text-heading mt-1.5 text-xl tracking-tight sm:text-2xl">
             {quiz?.title || 'Cohort outcomes'}
