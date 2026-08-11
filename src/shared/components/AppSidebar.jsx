@@ -95,7 +95,7 @@ export default function AppSidebar({ variant = 'student' }) {
       >
         <div className="flex flex-1 flex-col items-center px-2 pt-4 pb-3">
           <Link
-            to={home}
+            to="/"
             className="mb-6 flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-soft ring-1 ring-border/60"
             aria-label="Taqyem home"
           >

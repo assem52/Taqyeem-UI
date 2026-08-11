@@ -53,6 +53,7 @@ export default function Homepage() {
           {/* Brand Logo */}
           <Link
             to="/"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-heading transition-opacity hover:opacity-90"
             aria-label="Taqyem Home"
           >

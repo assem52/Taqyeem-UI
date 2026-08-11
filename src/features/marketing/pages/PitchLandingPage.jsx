@@ -13,12 +13,16 @@ export default function PitchLandingPage() {
     <div className="min-h-screen bg-background text-body">
       <header className="border-border/80 sticky top-0 z-20 border-b bg-surface/90 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <p className="font-display text-heading flex items-center gap-2.5 text-xl tracking-tight">
+          <Link
+            to="/"
+            className="font-display text-heading flex items-center gap-2.5 text-xl tracking-tight transition-opacity hover:opacity-90"
+            aria-label="Taqyem home"
+          >
             <span className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-white">
               T
             </span>
             Taqyem
-          </p>
+          </Link>
           <div className="flex items-center gap-2">
             <Link
               to="/login"
