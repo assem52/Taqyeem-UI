@@ -358,7 +358,7 @@ export default function QuizAttemptPage() {
 
     const handleBackClick = () => {
         if (isTimeUp || attempt?.status === 'SUBMITTED' || attempt?.status === 'AUTO_SUBMITTED' || isSubmittedSuccessfully) {
-            navigate('/');
+            navigate('/dashboard');
             return;
         }
         setShowLeaveModal(true);
@@ -846,7 +846,7 @@ export default function QuizAttemptPage() {
                                     <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
                                         <button
                                             type="button"
-                                            onClick={() => navigate('/')}
+                                            onClick={() => navigate('/dashboard')}
                                             className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-button px-4 py-2.5 text-xs font-bold border border-border bg-surface text-heading hover:bg-background transition-colors shadow-sm"
                                         >
                                             Return to Dashboard

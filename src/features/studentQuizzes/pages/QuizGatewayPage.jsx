@@ -199,7 +199,7 @@ export default function QuizGatewayPage() {
             {/* Actions Bar */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-6">
               <Link
-                to="/"
+                to="/dashboard"
                 className="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap rounded-button text-sm font-medium transition-all duration-200 border border-border bg-surface text-body hover:bg-background px-5 py-2.5"
               >
                 Return to Dashboard

@@ -50,7 +50,7 @@ export default function QuizResultsPage() {
         title="Unable to load results"
         description={message}
         buttonText="Back to dashboard"
-        buttonLink="/"
+        buttonLink="/dashboard"
       />
     );
   }
