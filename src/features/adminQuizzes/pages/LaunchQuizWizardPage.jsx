@@ -358,6 +358,17 @@ export default function LaunchQuizWizardPage() {
               to={`/admin/quizzes/${quizId}/questions`}
               state={{
                 returnTo: `/admin/quizzes/launch?quizId=${quizId}&step=publish`,
+                notice: 'Tip: use Generate with AI to draft from a topic, notes, or PDF.',
+              }}
+              className="border-primary/30 bg-primary-soft text-primary hover:bg-primary hover:text-white rounded-button inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition"
+            >
+              <span aria-hidden="true">✦</span>
+              Generate with AI
+            </Link>
+            <Link
+              to={`/admin/quizzes/${quizId}/questions`}
+              state={{
+                returnTo: `/admin/quizzes/launch?quizId=${quizId}&step=publish`,
                 notice: 'When questions look good, continue the launch wizard.',
               }}
               className="bg-primary hover:bg-primary-hover rounded-button px-4 py-2.5 text-sm font-semibold text-white"
