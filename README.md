@@ -28,9 +28,9 @@ Built with **React 19**, **Vite**, **Redux Toolkit Query**, **React Router**, an
 
 ---
 
-## Technical maturity
+## Architecture
 
-The client is organized around **role-safe routes**, **cache-coherent API access**, and **attempt UX that tolerates flaky networks**—not a thin form shell.
+Role-safe routing, cache-coherent API access, and attempt UX that tolerates flaky networks.
 
 ### Data & session
 - **RTK Query** as the single HTTP layer: tagged entities (`Quizzes`, `Attempt`, `AttemptReview`, `RecentSubmissions`, bank, follow-up, …) with targeted invalidation after mutations.
