@@ -21,7 +21,12 @@ function newClientId() {
 }
 
 function normalizeDraft(draft) {
-  const type = draft.type === 'TRUE_FALSE' ? 'TRUE_FALSE' : 'MCQ';
+  const type =
+    draft.type === 'TRUE_FALSE'
+      ? 'TRUE_FALSE'
+      : draft.type === 'OPEN_ENDED'
+        ? 'OPEN_ENDED'
+        : 'MCQ';
   let options = Array.isArray(draft.options)
     ? draft.options.map((option) => ({
         option: String(option.option ?? '').trim(),
@@ -29,7 +34,9 @@ function normalizeDraft(draft) {
       }))
     : [];
 
-  if (type === 'TRUE_FALSE') {
+  if (type === 'OPEN_ENDED') {
+    options = [];
+  } else if (type === 'TRUE_FALSE') {
     const trueCorrect = options.some(
       (option) => option.isCorrect && option.option.toLowerCase() === 'true',
     );
@@ -202,6 +209,7 @@ export default function GenerateWithAiModal({
         setError('Selected drafts need question text.');
         return;
       }
+      if (draft.type === 'OPEN_ENDED') continue;
       if (draft.options.some((option) => !option.option.trim())) {
         setError('Fill in every option on selected drafts, or remove empty ones.');
         return;
@@ -365,6 +373,7 @@ export default function GenerateWithAiModal({
                   <option value="MIXED">Mixed</option>
                   <option value="MCQ">MCQ only</option>
                   <option value="TRUE_FALSE">True/False only</option>
+                  <option value="OPEN_ENDED">Essay only</option>
                 </select>
               </div>
               <div>
@@ -451,12 +460,18 @@ export default function GenerateWithAiModal({
                         <select
                           value={draft.type}
                           onChange={(event) =>
-                            updateDraft(draft.clientId, { type: event.target.value })
+                            updateDraft(draft.clientId, (current) =>
+                              normalizeDraft({
+                                ...current,
+                                type: event.target.value,
+                              }),
+                            )
                           }
                           className="border-border bg-surface text-heading rounded-input border px-2 py-1 text-xs"
                         >
                           <option value="MCQ">MCQ</option>
                           <option value="TRUE_FALSE">True / False</option>
+                          <option value="OPEN_ENDED">Essay</option>
                         </select>
                         <label className="text-muted inline-flex items-center gap-1 text-xs">
                           Points
@@ -492,7 +507,9 @@ export default function GenerateWithAiModal({
 
                     <div>
                       <label className="text-muted mb-1 block text-xs font-medium">
-                        Explanation (optional)
+                        {draft.type === 'OPEN_ENDED'
+                          ? 'Grading rubric'
+                          : 'Explanation (optional)'}
                       </label>
                       <input
                         value={draft.explanation}
@@ -505,6 +522,7 @@ export default function GenerateWithAiModal({
                       />
                     </div>
 
+                    {draft.type !== 'OPEN_ENDED' ? (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-muted text-xs font-medium">Options</p>
@@ -585,6 +603,11 @@ export default function GenerateWithAiModal({
                         ))}
                       </ul>
                     </div>
+                    ) : (
+                      <p className="text-muted text-xs">
+                        Essay draft — students write free text; rubric guides AI/human grading.
+                      </p>
+                    )}
                   </li>
                 ))}
               </ul>
