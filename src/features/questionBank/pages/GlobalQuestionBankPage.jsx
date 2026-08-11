@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import AiSparklesIcon from '../../ai/components/AiSparklesIcon';
 import GenerateWithAiModal from '../../ai/components/GenerateWithAiModal';
 import AdminShell from '../../../shared/components/AdminShell';
 import QuestionForm from '../components/QuestionForm';
@@ -160,9 +161,9 @@ export default function GlobalQuestionBankPage() {
             type="button"
             onClick={() => setShowAiGenerate(true)}
             disabled={isMutating || isLoading || categories.length === 0 || aiSaving}
-            className="border-primary/30 bg-primary-soft text-primary hover:bg-primary hover:text-white rounded-button inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold transition disabled:opacity-50"
+            className="ai-generate-btn border-primary/30 bg-primary-soft text-primary hover:bg-primary hover:text-white rounded-button inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold transition disabled:opacity-50"
           >
-            <span aria-hidden="true">✦</span>
+            <AiSparklesIcon className="h-4 w-4" />
             Generate with AI
           </button>
           <button

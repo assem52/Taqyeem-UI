@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import AiSparklesIcon from './AiSparklesIcon';
 import { useGenerateAiQuestionsMutation } from '../aiApi';
 
 function errorMessage(error, fallback) {
@@ -134,7 +135,8 @@ export default function GenerateWithAiModal({
       >
         <div className="border-border flex items-start justify-between gap-4 border-b px-5 py-4">
           <div>
-            <p className="text-primary mb-1 text-xs font-semibold tracking-[0.18em] uppercase">
+            <p className="text-primary mb-1 inline-flex items-center gap-1.5 text-xs font-semibold tracking-[0.18em] uppercase">
+              <AiSparklesIcon className="h-3.5 w-3.5" />
               Generate with AI
             </p>
             <h2 id="generate-ai-title" className="font-display text-heading text-xl">
@@ -250,11 +252,9 @@ export default function GenerateWithAiModal({
             <button
               type="submit"
               disabled={generateState.isLoading || saving}
-              className="bg-primary hover:bg-primary-hover rounded-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+              className="ai-generate-btn bg-primary hover:bg-primary-hover rounded-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white transition hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
             >
-              <span aria-hidden="true" className="text-base leading-none">
-                ✦
-              </span>
+              <AiSparklesIcon className="h-4 w-4" />
               {generateState.isLoading ? 'Generating…' : 'Generate drafts'}
             </button>
           </form>

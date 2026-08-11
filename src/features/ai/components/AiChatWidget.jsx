@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import AiSparklesIcon from './AiSparklesIcon';
 import { useSendChatMessageMutation } from '../aiApi';
 
 function errorMessage(error, fallback) {
@@ -62,9 +63,14 @@ export default function AiChatWidget() {
       {open ? (
         <section className="pointer-events-auto border-border bg-surface shadow-soft flex h-[min(32rem,70vh)] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-dialog border">
           <header className="border-border flex items-center justify-between border-b px-4 py-3">
-            <div>
-              <p className="font-display text-heading text-base">Taqyem Assistant</p>
-              <p className="text-muted text-xs">Ask anything — hidden during graded attempts</p>
+            <div className="flex items-start gap-2.5">
+              <span className="bg-primary-soft text-primary mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full">
+                <AiSparklesIcon className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="font-display text-heading text-base">Taqyem Assistant</p>
+                <p className="text-muted text-xs">Ask anything — hidden during graded attempts</p>
+              </div>
             </div>
             <button
               type="button"
@@ -115,9 +121,10 @@ export default function AiChatWidget() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="pointer-events-auto bg-primary hover:bg-primary-hover shadow-soft rounded-full px-4 py-3 text-sm font-semibold text-white transition hover:scale-[1.02] active:scale-[0.98]"
+        className="ai-generate-btn pointer-events-auto bg-primary hover:bg-primary-hover shadow-soft inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold text-white transition hover:scale-[1.02] active:scale-[0.98]"
         aria-label={open ? 'Close assistant' : 'Open assistant'}
       >
+        <AiSparklesIcon className="h-4 w-4" />
         {open ? 'Hide chat' : 'Ask AI'}
       </button>
     </div>

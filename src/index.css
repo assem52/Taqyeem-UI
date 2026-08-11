@@ -139,3 +139,45 @@
 @utility font-display {
   font-family: var(--font-display);
 }
+
+/* Modern AI sparkles mark — subtle pulse so CTAs read as “AI” instantly */
+@keyframes ai-sparkle-twinkle {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ai-sparkle-spin-soft {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(12deg);
+  }
+}
+
+.ai-sparkles-icon {
+  animation: ai-sparkle-spin-soft 2.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.ai-sparkles-icon__accent {
+  animation: ai-sparkle-twinkle 1.6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.ai-generate-btn:hover .ai-sparkles-icon {
+  animation-duration: 1.2s;
+}
+
+.ai-generate-btn:hover .ai-sparkles-icon__accent {
+  animation-duration: 0.8s;
+}
+

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import AiSparklesIcon from '../../ai/components/AiSparklesIcon';
 import AdminShell from '../../../shared/components/AdminShell';
 import {
   useBulkInviteStudentsMutation,
@@ -360,9 +361,9 @@ export default function LaunchQuizWizardPage() {
                 returnTo: `/admin/quizzes/launch?quizId=${quizId}&step=publish`,
                 notice: 'Tip: use Generate with AI to draft from a topic, notes, or PDF.',
               }}
-              className="border-primary/30 bg-primary-soft text-primary hover:bg-primary hover:text-white rounded-button inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition"
+              className="ai-generate-btn border-primary/30 bg-primary-soft text-primary hover:bg-primary hover:text-white rounded-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition"
             >
-              <span aria-hidden="true">✦</span>
+              <AiSparklesIcon className="h-4 w-4" />
               Generate with AI
             </Link>
             <Link
