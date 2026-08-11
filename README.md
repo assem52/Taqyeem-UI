@@ -15,44 +15,6 @@ Built with **React 19**, **Vite**, **Redux Toolkit Query**, **React Router**, an
 
 ---
 
-## Screenshots
-
-Assets live under [`docs/screenshots/`](docs/screenshots/).
-
-### Marketing
-
-![Landing page](docs/screenshots/Landing-page.png)
-
-![Landing page — product story](docs/screenshots/landing-page2.png)
-
-![Landing page — instructor value](docs/screenshots/landing-page-3.png)
-
-### Authentication
-
-![Login](docs/screenshots/login.png)
-
-### Administrator
-
-![Admin quiz catalog](docs/screenshots/admin-quizzes.png)
-
-![Generate with AI](docs/screenshots/Admin-generate-ai.png)
-
-![Submission alerts](docs/screenshots/notification-pane.png)
-
-![Attempt review](docs/screenshots/attempt-review.png)
-
-### Learner
-
-![Student dashboard](docs/screenshots/Student-dashboard.png)
-
-![Invitation gateway](docs/screenshots/student-invitaion.png)
-
-![Timed attempt](docs/screenshots/student-attempt.png)
-
-![In-app assistant](docs/screenshots/ai-chat.png)
-
----
-
 ## Stack
 
 | Layer | Choice |
@@ -210,6 +172,22 @@ Ensure API CORS allows the web origin (`FRONTEND_URL` / `CORS_ORIGINS` on the se
 
 ---
 
+## Preview
+
+<p align="center">
+  <img src="docs/screenshots/Landing-page.png" alt="Taqyem landing" width="720" />
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/admin-quizzes.png" alt="Admin quiz catalog" width="360" />
+  &nbsp;
+  <img src="docs/screenshots/student-attempt.png" alt="Learner attempt" width="360" />
+</p>
+
+Further UI captures (auth, invitations, review, alerts, AI chat): [`docs/screenshots/`](docs/screenshots/).
+
+---
+
 ## Documentation
 
 | Doc | Purpose |
@@ -224,4 +202,3 @@ Ensure API CORS allows the web origin (`FRONTEND_URL` / `CORS_ORIGINS` on the se
 
 - API service: sibling `backend/` repository (NestJS + Prisma + PostgreSQL).
 - Backend handoff: `docs/PROJECT_OVERVIEW.md`, `docs/ARCHITECTURE.md`, `docs/AI_QUESTION_GENERATION.md`.
-- Screenshots: `docs/screenshots/`.
