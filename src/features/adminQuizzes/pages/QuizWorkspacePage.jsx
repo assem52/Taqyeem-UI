@@ -103,7 +103,7 @@ export default function QuizWorkspacePage() {
             to="/admin/quizzes"
             className="rounded-button border border-border px-3 py-2 text-sm font-medium text-heading hover:bg-background"
           >
-            All quizzes
+            Back to quizzes
           </Link>
           <button
             type="button"

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import AiSparklesIcon from '../../ai/components/AiSparklesIcon';
+import GenerateWithAiModal from '../../ai/components/GenerateWithAiModal';
 import AdminShell from '../../../shared/components/AdminShell';
 import QuestionForm from '../components/QuestionForm';
 import {
@@ -32,6 +34,8 @@ export default function GlobalQuestionBankPage() {
   const [alert, setAlert] = useState('');
   const [actionError, setActionError] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [showAiGenerate, setShowAiGenerate] = useState(false);
+  const [aiSaving, setAiSaving] = useState(false);
 
   const categoriesQuery = useGetBankCategoriesQuery();
   const questionsQuery = useGetBankQuestionsQuery({
@@ -116,6 +120,29 @@ export default function GlobalQuestionBankPage() {
     }
   };
 
+  const saveAiDrafts = async ({ drafts, categoryId }) => {
+    setAiSaving(true);
+    setActionError('');
+    try {
+      for (const draft of drafts) {
+        await createQuestion({
+          categoryId,
+          text: draft.text,
+          explanation: draft.explanation,
+          type: draft.type,
+          points: draft.points || 1,
+          options: draft.options,
+        }).unwrap();
+      }
+      setSelectedCategoryId(categoryId || selectedCategoryId);
+      setAlert(
+        `Saved ${drafts.length} AI-generated question${drafts.length === 1 ? '' : 's'} to the bank.`,
+      );
+    } finally {
+      setAiSaving(false);
+    }
+  };
+
   const isLoading = categoriesQuery.isLoading || questionsQuery.isLoading;
   const isMutating =
     createState.isLoading ||
@@ -129,14 +156,25 @@ export default function GlobalQuestionBankPage() {
       title="Question Bank"
       subtitle="Browse persistent questions by category, then copy them into any quiz."
       actions={
-        <button
-          type="button"
-          onClick={openAdd}
-          disabled={isMutating || isLoading || categories.length === 0}
-          className="bg-primary hover:bg-primary-hover rounded-button px-3.5 py-2 text-sm font-semibold text-white disabled:opacity-50"
-        >
-          Add to bank
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowAiGenerate(true)}
+            disabled={isMutating || isLoading || aiSaving}
+            className="ai-generate-btn rounded-button inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold"
+          >
+            <AiSparklesIcon className="h-5 w-5" />
+            Generate with AI
+          </button>
+          <button
+            type="button"
+            onClick={openAdd}
+            disabled={isMutating || isLoading || categories.length === 0}
+            className="bg-primary hover:bg-primary-hover rounded-button px-3.5 py-2 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            Add to bank
+          </button>
+        </div>
       }
     >
       {isLoading ? (
@@ -351,6 +389,16 @@ export default function GlobalQuestionBankPage() {
           </div>
         </div>
       )}
+
+      <GenerateWithAiModal
+        open={showAiGenerate}
+        onClose={() => setShowAiGenerate(false)}
+        target="bank"
+        categories={categories}
+        defaultCategoryId={selectedCategoryId}
+        onSaveSelected={saveAiDrafts}
+        saving={aiSaving}
+      />
     </AdminShell>
   );
 }

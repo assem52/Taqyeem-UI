@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useGetAdminQuizByIdQuery } from '../../adminQuizzes/adminQuizzesApi';
+import GenerateWithAiModal from '../../ai/components/GenerateWithAiModal';
+import AiSparklesIcon from '../../ai/components/AiSparklesIcon';
 import AddFromBankModal from '../components/AddFromBankModal';
 import DuplicateQuizButton from '../components/DuplicateQuizButton';
 import QuestionCard from '../components/QuestionCard';
@@ -49,6 +51,8 @@ export default function QuestionBankPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [alert, setAlert] = useState(location.state?.notice || '');
   const [actionError, setActionError] = useState('');
+  const [showAiGenerate, setShowAiGenerate] = useState(false);
+  const [aiSaving, setAiSaving] = useState(false);
 
   const quizQuery = useGetAdminQuizByIdQuery(quizId);
   const questionsQuery = useGetQuizQuestionsQuery(quizId);
@@ -175,6 +179,30 @@ export default function QuestionBankPage() {
     setIsDirty(false);
   };
 
+  const saveAiDrafts = async ({ drafts }) => {
+    setAiSaving(true);
+    setActionError('');
+    try {
+      for (const draft of drafts) {
+        await createQuestion({
+          quizId,
+          body: {
+            text: draft.text,
+            explanation: draft.explanation,
+            type: draft.type,
+            points: draft.points || 1,
+            options: draft.options,
+          },
+        }).unwrap();
+      }
+      setAlert(
+        `Added ${drafts.length} AI-generated question${drafts.length === 1 ? '' : 's'} to this quiz.`,
+      );
+    } finally {
+      setAiSaving(false);
+    }
+  };
+
   const isLoading = quizQuery.isLoading || questionsQuery.isLoading;
   const hasLoadError = quizQuery.isError || questionsQuery.isError;
 
@@ -206,6 +234,15 @@ export default function QuestionBankPage() {
           </DuplicateQuizButton>
           {!readOnly && (
             <>
+              <button
+                type="button"
+                onClick={() => setShowAiGenerate(true)}
+                disabled={isMutating || isLoading || aiSaving}
+                className="ai-generate-btn rounded-button inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold"
+              >
+                <AiSparklesIcon className="h-5 w-5" />
+                Generate with AI
+              </button>
               <button
                 type="button"
                 onClick={() => setShowBankPicker(true)}
@@ -313,6 +350,14 @@ export default function QuestionBankPage() {
                 <div className="mt-6 flex flex-wrap justify-center gap-2">
                   <button
                     type="button"
+                    onClick={() => setShowAiGenerate(true)}
+                    className="ai-generate-btn rounded-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold"
+                  >
+                    <AiSparklesIcon className="h-5 w-5" />
+                    Generate with AI
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setShowBankPicker(true)}
                     className="border-border text-heading hover:bg-background rounded-button border px-4 py-2.5 text-sm font-medium"
                   >
@@ -363,6 +408,14 @@ export default function QuestionBankPage() {
           }}
         />
       )}
+
+      <GenerateWithAiModal
+        open={showAiGenerate}
+        onClose={() => setShowAiGenerate(false)}
+        target="quiz"
+        onSaveSelected={saveAiDrafts}
+        saving={aiSaving}
+      />
     </AdminShell>
   );
 }

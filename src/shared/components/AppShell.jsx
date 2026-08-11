@@ -1,8 +1,10 @@
 import AppSidebar from './AppSidebar';
+import AiChatWidget from '../../features/ai/components/AiChatWidget';
 
 /**
  * App chrome with icon sidebar (student or admin).
- * Attempt pages should stay full-bleed and skip this shell.
+ * Attempt pages should stay full-bleed and skip this shell
+ * (so the assistant is automatically hidden during graded attempts).
  */
 export default function AppShell({
   variant = 'student',
@@ -45,6 +47,7 @@ export default function AppShell({
           {children}
         </main>
       </div>
+      <AiChatWidget />
     </div>
   );
 }

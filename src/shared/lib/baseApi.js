@@ -68,6 +68,7 @@ export const baseApi = createApi({
     'QuestionAnalytics',
     'QuizAttempts',
     'AttemptReview',
+    'RecentSubmissions',
   ],
   baseQuery: baseQueryWithReauth,
   endpoints: () => ({}),

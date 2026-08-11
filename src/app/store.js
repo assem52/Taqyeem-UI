@@ -6,6 +6,7 @@ import '../features/adminFollowUp/adminFollowUpApi'
 import '../features/adminQuizzes/adminQuizzesApi'
 import '../features/questionBank/questionBankApi'
 import '../features/questionBank/globalQuestionBankApi'
+import '../features/ai/aiApi'
 
 export const store = configureStore({
   reducer: {

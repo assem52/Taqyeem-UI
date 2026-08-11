@@ -55,7 +55,11 @@ export default function QuestionForm({
 }) {
   const requireCategory = Array.isArray(categories);
   const initialType =
-    question?.type === 'TRUE_FALSE' ? 'TRUE_FALSE' : 'MCQ';
+    question?.type === 'TRUE_FALSE'
+      ? 'TRUE_FALSE'
+      : question?.type === 'OPEN_ENDED'
+        ? 'OPEN_ENDED'
+        : 'MCQ';
   const [text, setText] = useState(question?.text ?? '');
   const [explanation, setExplanation] = useState(question?.explanation ?? '');
   const [type, setType] = useState(initialType);
@@ -81,7 +85,9 @@ export default function QuestionForm({
             { option: 'True', isCorrect: true },
             { option: 'False', isCorrect: false },
           ]
-        : initialOptions(null, 'MCQ'),
+        : nextType === 'OPEN_ENDED'
+          ? []
+          : initialOptions(null, 'MCQ'),
     );
     markDirty();
   };
@@ -114,12 +120,14 @@ export default function QuestionForm({
     if (!Number.isFinite(Number(points)) || Number(points) <= 0) {
       errors.points = 'Points must be greater than zero.';
     }
-    if (options.length < 2) errors.options = 'At least two options are required.';
-    if (options.some((option) => !option.option.trim())) {
-      errors.options = 'Every option needs text.';
-    }
-    if (options.filter((option) => option.isCorrect).length !== 1) {
-      errors.options = 'Select exactly one correct answer.';
+    if (type !== 'OPEN_ENDED') {
+      if (options.length < 2) errors.options = 'At least two options are required.';
+      if (options.some((option) => !option.option.trim())) {
+        errors.options = 'Every option needs text.';
+      }
+      if (options.filter((option) => option.isCorrect).length !== 1) {
+        errors.options = 'Select exactly one correct answer.';
+      }
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
@@ -137,11 +145,14 @@ export default function QuestionForm({
         type,
         points: Number(points),
         ...(requireCategory ? { categoryId } : {}),
-        options: options.map((option, index) => ({
-          option: option.option.trim(),
-          isCorrect: option.isCorrect,
-          position: index,
-        })),
+        options:
+          type === 'OPEN_ENDED'
+            ? []
+            : options.map((option, index) => ({
+                option: option.option.trim(),
+                isCorrect: option.isCorrect,
+                position: index,
+              })),
       });
       setIsDirty(false);
       onDirtyChange?.(false);
@@ -236,7 +247,9 @@ export default function QuestionForm({
 
       <div>
         <label htmlFor="question-explanation" className={labelClass}>
-          Explanation (shown after review unlocks)
+          {type === 'OPEN_ENDED'
+            ? 'Grading rubric (AI + human review)'
+            : 'Explanation (shown after review unlocks)'}
         </label>
         <textarea
           id="question-explanation"
@@ -247,7 +260,11 @@ export default function QuestionForm({
             markDirty();
           }}
           className={inputClass}
-          placeholder="Optional teaching note for learners…"
+          placeholder={
+            type === 'OPEN_ENDED'
+              ? 'What a strong answer should cover…'
+              : 'Optional teaching note for learners…'
+          }
         />
       </div>
 
@@ -264,6 +281,7 @@ export default function QuestionForm({
           >
             <option value="MCQ">Multiple choice</option>
             <option value="TRUE_FALSE">True / False</option>
+            <option value="OPEN_ENDED">Essay</option>
           </select>
         </div>
         <div>
@@ -289,6 +307,7 @@ export default function QuestionForm({
         </div>
       </div>
 
+      {type !== 'OPEN_ENDED' ? (
       <fieldset>
         <legend className={labelClass}>
           Answers
@@ -347,6 +366,11 @@ export default function QuestionForm({
           </button>
         )}
       </fieldset>
+      ) : (
+        <p className="text-muted text-sm">
+          Students type a free-text essay answer. Rubric above guides AI grading and human review.
+        </p>
+      )}
 
       <div className="border-border flex flex-wrap justify-end gap-2 border-t pt-4">
         <button

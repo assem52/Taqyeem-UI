@@ -100,6 +100,24 @@ export const adminQuizzesApi = baseApi.injectEndpoints({
       query: (attemptId) => `/admin/attempts/${attemptId}`,
       providesTags: (result, error, attemptId) => [{ type: 'AttemptReview', id: attemptId }],
     }),
+
+    getRecentSubmissions: build.query({
+      query: () => '/admin/attempts/recent-submissions',
+      providesTags: ['RecentSubmissions'],
+    }),
+
+    overrideEssayGrade: build.mutation({
+      query: ({ attemptId, questionId, awardedPoints, feedback }) => ({
+        url: `/admin/attempts/${attemptId}/questions/${questionId}/grade`,
+        method: 'PATCH',
+        body: { awardedPoints, feedback },
+      }),
+      invalidatesTags: (result, error, { attemptId }) => [
+        { type: 'AttemptReview', id: attemptId },
+        'QuizAttempts',
+        'QuizAnalytics',
+      ],
+    }),
   }),
 });
 
@@ -117,4 +135,6 @@ export const {
   useGetQuizAnalyticsQuery,
   useGetQuizAttemptsQuery,
   useGetAdminAttemptReviewQuery,
+  useOverrideEssayGradeMutation,
+  useGetRecentSubmissionsQuery,
 } = adminQuizzesApi;
