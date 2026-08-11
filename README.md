@@ -2,7 +2,7 @@
 
 Learner and administrator web client for **Taqyem** — cohort assessments, guided quiz launch, integrity-aware attempts, AI-assisted authoring, and submission review.
 
-Built with **React 19**, **Vite**, **Redux Toolkit Query**, **React Router**, and **Tailwind CSS 4**. Talks exclusively to the Taqyem NestJS API over JWT.
+Built with **React 19**, **Vite**, **Redux Toolkit Query**, **React Router**, and **Tailwind CSS 4**. Speaks exclusively to the Taqyem NestJS API over JWT.
 
 ---
 
