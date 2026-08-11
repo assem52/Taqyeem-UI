@@ -57,6 +57,18 @@ export const studentQuizzesApi = baseApi.injectEndpoints({
                 method: 'POST',
             }),
         }),
+        recordCopy: build.mutation({
+query: (attemptId) => ({
+url: `/attempts/${attemptId}/integrity-events/copy`,
+method: 'POST',
+}),
+}),
+recordScreenshot: build.mutation({
+query: (attemptId) => ({
+url: `/attempts/${attemptId}/integrity-events/screenshot`,
+method: 'POST',
+}),
+}),
     }),
 })
 
@@ -70,4 +82,6 @@ export const {
     useSaveAnswerMutation,
     useSubmitAttemptMutation,
     useRecordVisibilityLostMutation,
+    useRecordCopyMutation,
+useRecordScreenshotMutation,
 } = studentQuizzesApi;
