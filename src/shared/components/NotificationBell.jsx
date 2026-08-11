@@ -166,7 +166,7 @@ export default function NotificationBell({ variant = 'student' }) {
         <div
           role="dialog"
           aria-label="Notifications"
-          className="border-border bg-surface absolute bottom-full left-1/2 z-50 mb-2 flex h-[min(34rem,82vh)] w-[17.5rem] max-w-[calc(100vw-1.5rem)] -translate-x-1/2 flex-col overflow-hidden rounded-card border shadow-soft sm:bottom-auto sm:top-0 sm:left-full sm:mb-0 sm:ml-2 sm:h-[min(38rem,88vh)] sm:w-72 sm:translate-x-0"
+          className="border-border bg-surface fixed inset-x-3 bottom-20 z-[60] flex h-[min(70vh,36rem)] w-auto flex-col overflow-hidden rounded-card border shadow-soft sm:inset-x-auto sm:top-4 sm:bottom-4 sm:left-[5.25rem] sm:h-auto sm:w-72"
         >
           {variant === 'admin' ? (
             <div className="flex h-full min-h-0 flex-col">
