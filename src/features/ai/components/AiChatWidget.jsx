@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import chatIcon from '../../../assets/chat-icon.svg';
 import { useSendChatMessageMutation } from '../aiApi';
 
 function errorMessage(error, fallback) {
@@ -65,7 +66,7 @@ export default function AiChatWidget() {
             <div className="flex items-start gap-2.5">
               <span className="bg-heading/90 inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full p-1.5">
                 <img
-                  src="/chat-icon.svg"
+                  src={chatIcon}
                   alt=""
                   className="h-full w-full object-contain"
                   draggable={false}
@@ -129,7 +130,7 @@ export default function AiChatWidget() {
         aria-label={open ? 'Close assistant' : 'Open assistant'}
       >
         <img
-          src="/chat-icon.svg"
+          src={chatIcon}
           alt=""
           className="h-8 w-8 object-contain"
           draggable={false}

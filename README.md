@@ -177,7 +177,8 @@ src/
     studentQuizzes/    Dashboard, attempt, results
     ai/                Chat widget, generate modal
   shared/              Shell, sidebar, notification bell, API base
-public/                Static icons & assets
+  assets/              Brand images & icons (imported by the app)
+public/                Deploy-only static files (e.g. SPA redirects)
 ```
 
 ---
