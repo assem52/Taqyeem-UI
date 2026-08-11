@@ -89,7 +89,7 @@ export default function GenerateWithAiModal({
 }) {
   const [topic, setTopic] = useState('');
   const [content, setContent] = useState('');
-  const [pdf, setPdf] = useState(null);
+  const [sourceFile, setSourceFile] = useState(null);
   const [count, setCount] = useState(5);
   const [typePreference, setTypePreference] = useState('MIXED');
   const [categoryId, setCategoryId] = useState(defaultCategoryId || '');
@@ -139,8 +139,8 @@ export default function GenerateWithAiModal({
   const handleGenerate = async (event) => {
     event.preventDefault();
     setError('');
-    if (!topic.trim() && !content.trim() && !pdf) {
-      setError('Add a topic, pasted text, or a PDF.');
+    if (!topic.trim() && !content.trim() && !sourceFile) {
+      setError('Add a topic, pasted text, or a PDF/image.');
       return;
     }
     if (target === 'bank') {
@@ -159,7 +159,7 @@ export default function GenerateWithAiModal({
     if (content.trim()) formData.append('content', content.trim());
     formData.append('count', String(count));
     formData.append('typePreference', typePreference);
-    if (pdf) formData.append('pdf', pdf);
+    if (sourceFile) formData.append('source', sourceFile);
 
     try {
       const result = await generate(formData).unwrap();
@@ -222,7 +222,7 @@ export default function GenerateWithAiModal({
       resetResults();
       setTopic('');
       setContent('');
-      setPdf(null);
+      setSourceFile(null);
       onClose();
     } catch (err) {
       setError(errorMessage(err, 'Failed to save selected questions.'));
@@ -244,10 +244,10 @@ export default function GenerateWithAiModal({
               Generate with AI
             </p>
             <h2 id="generate-ai-title" className="font-display text-heading text-xl">
-              Draft questions from a topic, notes, or PDF
+              Draft questions from a topic, notes, PDF, or image
             </h2>
             <p className="text-muted mt-1 text-sm">
-              Generate drafts, edit them inline, then save only what you want.
+              Images are OCR’d to text first (saves model quota), then you can edit drafts inline.
             </p>
           </div>
           <button
@@ -368,16 +368,19 @@ export default function GenerateWithAiModal({
                 </select>
               </div>
               <div>
-                <label htmlFor="ai-pdf" className="text-heading mb-1.5 block text-sm font-medium">
-                  PDF (optional)
+                <label htmlFor="ai-source" className="text-heading mb-1.5 block text-sm font-medium">
+                  PDF or image (optional)
                 </label>
                 <input
-                  id="ai-pdf"
+                  id="ai-source"
                   type="file"
-                  accept="application/pdf,.pdf"
-                  onChange={(event) => setPdf(event.target.files?.[0] || null)}
+                  accept="application/pdf,.pdf,image/png,image/jpeg,image/jpg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif"
+                  onChange={(event) => setSourceFile(event.target.files?.[0] || null)}
                   className="text-muted w-full text-sm file:border-border file:text-heading hover:file:bg-background file:mr-3 file:rounded-button file:border file:bg-background file:px-3 file:py-1.5"
                 />
+                {sourceFile ? (
+                  <p className="text-muted mt-1 text-xs">{sourceFile.name}</p>
+                ) : null}
               </div>
             </div>
 
@@ -387,7 +390,11 @@ export default function GenerateWithAiModal({
               className="ai-generate-btn rounded-button inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold"
             >
               <AiSparklesIcon className="h-5 w-5" />
-              {generateState.isLoading ? 'Generating…' : 'Generate drafts'}
+              {generateState.isLoading
+                ? sourceFile && !String(sourceFile.type || '').includes('pdf')
+                  ? 'Reading image (OCR)…'
+                  : 'Generating…'
+                : 'Generate drafts'}
             </button>
           </form>
 
