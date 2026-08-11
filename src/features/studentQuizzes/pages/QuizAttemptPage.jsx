@@ -50,6 +50,7 @@ export default function QuizAttemptPage() {
     const hasAutoSubmittedRef = useRef(false);
     const attemptIdRef = useRef(attempt?.id);
     const attemptAnswersRef = useRef(attempt?.attemptAnswers);
+    const attemptQuestionsRef = useRef(attempt?.questions);
     const latestVisibilityEventRef = useRef(null);
     const lastVisibilityStateRef = useRef(typeof document !== 'undefined' ? document.visibilityState : 'visible');
 
@@ -60,6 +61,10 @@ export default function QuizAttemptPage() {
     useEffect(() => {
         attemptAnswersRef.current = attempt?.attemptAnswers;
     }, [attempt?.attemptAnswers]);
+
+    useEffect(() => {
+        attemptQuestionsRef.current = attempt?.questions;
+    }, [attempt?.questions]);
 
     const safeSetSaveStatus = useCallback((updater) => {
         if (isMounted.current) {
@@ -82,27 +87,27 @@ export default function QuizAttemptPage() {
 
         const savePromise = (async () => {
             safeSetSaveStatus('Saving...');
+            const question = attemptQuestionsRef.current?.find((q) => q.id === questionId);
+            const isEssay = question?.type === 'OPEN_ENDED';
+            const payload = isEssay
+                ? { attemptId, questionId, selectedOptionId: null, textAnswer: value }
+                : { attemptId, questionId, selectedOptionId: value, textAnswer: null };
             try {
-                await saveAnswerMutation({ 
-                    attemptId, 
-                    questionId, 
-                    selectedOptionId: value 
-                }).unwrap();
+                await saveAnswerMutation(payload).unwrap();
                 safeSetSaveStatus('Saved');
                 setTimeout(() => safeSetSaveStatus((prev) => (prev === 'Saved' ? '' : prev)), 2000);
             } catch {
                 safeSetSaveStatus('Retrying...');
                 try {
-                    await saveAnswerMutation({ 
-                        attemptId, 
-                        questionId, 
-                        selectedOptionId: value 
-                    }).unwrap();
+                    await saveAnswerMutation(payload).unwrap();
                     safeSetSaveStatus('Saved');
                     setTimeout(() => safeSetSaveStatus((prev) => (prev === 'Saved' ? '' : prev)), 2000);
                 } catch {
                     safeSetSaveStatus('Error saving');
-                    const originalSaved = attemptAnswersRef.current?.[questionId]?.selectedOptionId;
+                    const original = attemptAnswersRef.current?.[questionId];
+                    const originalSaved = isEssay
+                        ? original?.textAnswer
+                        : original?.selectedOptionId;
                     setAnswers((prev) => {
                         const copy = { ...prev };
                         if (originalSaved != null && originalSaved !== '') {
@@ -307,8 +312,10 @@ export default function QuizAttemptPage() {
             const restoredAnswers = {};
             if (attempt.attemptAnswers && typeof attempt.attemptAnswers === 'object') {
                 for (const [qId, data] of Object.entries(attempt.attemptAnswers)) {
-                    if (data?.selectedOptionId != null) {
+                    if (data?.selectedOptionId != null && data.selectedOptionId !== '') {
                         restoredAnswers[qId] = data.selectedOptionId;
+                    } else if (data?.textAnswer != null && data.textAnswer !== '') {
+                        restoredAnswers[qId] = data.textAnswer;
                     }
                 }
             }
