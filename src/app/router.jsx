@@ -7,6 +7,7 @@ import LaunchQuizWizardPage from "../features/adminQuizzes/pages/LaunchQuizWizar
 import QuizWorkspacePage from "../features/adminQuizzes/pages/QuizWorkspacePage";
 import AdminAttemptReviewPage from "../features/adminQuizzes/pages/AdminAttemptReviewPage";
 import QuestionBankPage from "../features/questionBank/pages/QuestionBankPage";
+import GlobalQuestionBankPage from "../features/questionBank/pages/GlobalQuestionBankPage";
 import InvitationPage from "../features/studentQuizzes/pages/InvitationPage";
 import QuizAttemptPage from "../features/studentQuizzes/pages/QuizAttemptPage";
 import QuizResultsPage from "../features/studentQuizzes/pages/QuizResultsPage";
@@ -114,6 +115,16 @@ export const router = createBrowserRouter([
       <RequireAuth>
         <RequireRole role="ADMIN">
           <QuizWorkspacePage />
+        </RequireRole>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: '/admin/question-bank',
+    element: (
+      <RequireAuth>
+        <RequireRole role="ADMIN">
+          <GlobalQuestionBankPage />
         </RequireRole>
       </RequireAuth>
     ),
