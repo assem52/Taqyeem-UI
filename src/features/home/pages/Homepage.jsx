@@ -55,9 +55,13 @@ export default function Homepage() {
             className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-heading transition-opacity hover:opacity-90"
             aria-label="Taqyem Home"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary font-bold text-white shadow-soft">
-              T
-            </span>
+            <img
+              src="/taqyem-logo.png"
+              alt=""
+              width={36}
+              height={36}
+              className="h-9 w-9 rounded-xl object-cover shadow-soft ring-1 ring-border/60"
+            />
             <span className="font-display">Taqyem</span>
           </Link>
 
@@ -933,9 +937,13 @@ export default function Homepage() {
                 className="flex items-center gap-2.5 text-lg font-bold text-heading tracking-tight"
                 aria-label="Taqyem Home"
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary font-bold text-white shadow-soft">
-                  T
-                </span>
+                <img
+                  src="/taqyem-logo.png"
+                  alt=""
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 rounded-xl object-cover shadow-soft ring-1 ring-border/60"
+                />
                 <span className="font-display">Taqyem</span>
               </Link>
               <p className="text-xs leading-relaxed text-muted">

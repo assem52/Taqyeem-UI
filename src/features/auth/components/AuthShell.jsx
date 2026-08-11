@@ -15,9 +15,13 @@ export default function AuthShell({
       <header className="border-border/80 border-b bg-surface/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-4 sm:px-6">
           <Link to="/" className="group flex items-center gap-2.5">
-            <span className="bg-primary flex h-8 w-8 items-center justify-center rounded-lg text-sm font-bold text-white shadow-soft">
-              T
-            </span>
+            <img
+              src="/taqyem-logo.png"
+              alt=""
+              width={32}
+              height={32}
+              className="h-8 w-8 rounded-lg object-cover shadow-soft ring-1 ring-border/60"
+            />
             <span className="font-display text-heading text-xl tracking-tight group-hover:opacity-90">
               Taqyem
             </span>

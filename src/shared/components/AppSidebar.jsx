@@ -95,10 +95,16 @@ export default function AppSidebar({ variant = 'student' }) {
         <div className="flex flex-1 flex-col items-center px-2 pt-4 pb-3">
           <Link
             to={home}
-            className="bg-primary mb-6 flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold text-white shadow-soft"
+            className="mb-6 flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl shadow-soft ring-1 ring-border/60"
             aria-label="Taqyem home"
           >
-            T
+            <img
+              src="/taqyem-logo.png"
+              alt=""
+              width={40}
+              height={40}
+              className="h-10 w-10 object-cover"
+            />
           </Link>
 
           <nav className="flex w-full flex-col items-stretch gap-1">{nav}</nav>
